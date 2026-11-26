@@ -10,24 +10,37 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import moment from 'moment';
 import { AppColors } from '@/constants/colors';
 import { Header } from '@/components/Header';
 import { SideMenu } from '@/components/SideMenu';
-import { StatCard } from '@/components/StatCard';
 import { PatronCard } from '@/components/PatronCard';
 import { CollectionModal } from '@/components/CollectionModal';
+import { DateRangeModal } from '@/components/DateRangeModal';
+import { CollectionSummaryChart } from '@/components/CollectionSummaryChart';
+import { ExecutiveCollectionList } from '@/components/ExecutiveCollectionList';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   fetchPatronsThunk,
-  loadCollectionHistoryThunk,
+  fetchExecutiveCollectionsThunk,
+  fetchCollectionSummaryThunk,
 } from '@/store/slices/patronsSlice';
 import { Patron } from '@/services/api';
 
+type CollectionViewTab = 'chart' | 'list';
+
 export default function DashboardScreen() {
   const dispatch = useAppDispatch();
-  const { patrons, currency, isLoading, error, recentCollections } = useAppSelector(
-    (state) => state.patrons
-  );
+  const {
+    patrons,
+    currency,
+    isLoading,
+    error,
+    executiveCollections,
+    isLoadingCollections,
+    collectionSummary,
+    isLoadingSummary,
+  } = useAppSelector((state) => state.patrons);
   const { mobile } = useAppSelector((state) => state.auth);
 
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
@@ -36,20 +49,37 @@ export default function DashboardScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Date Range State for Executive Collections & Summary APIs
+  // Defaults to current date (today) on first entry
+  const [fromDate, setFromDate] = useState(() => moment().format('YYYY-MM-DD'));
+  const [toDate, setToDate] = useState(() => moment().format('YYYY-MM-DD'));
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [collectionTab, setCollectionTab] = useState<CollectionViewTab>('chart');
+
   useEffect(() => {
     dispatch(fetchPatronsThunk());
-    dispatch(loadCollectionHistoryThunk());
-  }, [dispatch]);
+    dispatch(fetchExecutiveCollectionsThunk({ fromDate, toDate }));
+    dispatch(fetchCollectionSummaryThunk({ fromDate, toDate }));
+  }, [dispatch, fromDate, toDate]);
 
   const onRefresh = async () => {
     setIsRefreshing(true);
-    await dispatch(fetchPatronsThunk());
+    await Promise.all([
+      dispatch(fetchPatronsThunk()),
+      dispatch(fetchExecutiveCollectionsThunk({ fromDate, toDate })),
+      dispatch(fetchCollectionSummaryThunk({ fromDate, toDate })),
+    ]);
     setIsRefreshing(false);
   };
 
   const handleOpenCollection = (patron: Patron) => {
     setSelectedPatron(patron);
     setIsCollectionModalOpen(true);
+  };
+
+  const handleDateRangeApply = (newFrom: string, newTo: string) => {
+    setFromDate(newFrom);
+    setToDate(newTo);
   };
 
   // Filtered Patrons
@@ -62,33 +92,6 @@ export default function DashboardScreen() {
         p.id.toLowerCase().includes(q)
     );
   }, [patrons, searchQuery]);
-
-  // Aggregate Metrics
-  const metrics = useMemo(() => {
-    let totalLimit = 0;
-    let totalUsed = 0;
-    let totalAvailable = 0;
-
-    patrons.forEach((p) => {
-      totalLimit += parseFloat(p.credit_limit || '0');
-      totalUsed += parseFloat(p.used_credit || '0');
-      totalAvailable += parseFloat(p.available_credit || '0');
-    });
-
-    const formatCurrency = (val: number) => {
-      return `₹${val.toLocaleString('en-IN', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      })}`;
-    };
-
-    return {
-      totalPatrons: patrons.length.toString(),
-      totalLimit: formatCurrency(totalLimit),
-      totalUsed: formatCurrency(totalUsed),
-      totalAvailable: formatCurrency(totalAvailable),
-    };
-  }, [patrons]);
 
   return (
     <View style={styles.screen}>
@@ -111,12 +114,13 @@ export default function DashboardScreen() {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            tintColor={AppColors.primary}
-            colors={[AppColors.primary]}
+            tintColor={AppColors.dominant}
+            colors={[AppColors.dominant]}
           />
         }>
         {/* Welcome Executive Card */}
@@ -129,65 +133,95 @@ export default function DashboardScreen() {
             ) : null}
           </View>
           <View style={styles.welcomeBadgeIcon}>
-            <Ionicons name="bar-chart" size={26} color={AppColors.primary} />
+            <Ionicons name="bar-chart" size={24} color={AppColors.dominant} />
           </View>
         </View>
 
-        {/* Financial Metrics Summary Grid */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statRow}>
-            <StatCard
-              title="Available Credit"
-              value={metrics.totalAvailable}
-              subtitle="All patrons pool"
-              iconName="wallet-outline"
-              variant="dark"
-            />
-            <StatCard
-              title="Credit Limit"
-              value={metrics.totalLimit}
-              subtitle="Total authorized"
-              iconName="shield-checkmark-outline"
-              variant="light"
-            />
+        {/* ==================================================== */}
+        {/* COLLECTIONS & SUMMARY APIS SECTION (Replacing Recent) */}
+        {/* ==================================================== */}
+        <View style={styles.collectionsSection}>
+          {/* Segment Tabs: Chart vs List */}
+          <View style={styles.tabPillsRow}>
+            <Pressable
+              style={[
+                styles.tabPill,
+                collectionTab === 'chart' && styles.tabPillActive,
+              ]}
+              onPress={() => setCollectionTab('chart')}>
+              <Ionicons
+                name="bar-chart-outline"
+                size={14}
+                color={
+                  collectionTab === 'chart'
+                    ? AppColors.white
+                    : AppColors.mutedSlate
+                }
+              />
+              <Text
+                style={[
+                  styles.tabPillText,
+                  collectionTab === 'chart' && styles.tabPillTextActive,
+                ]}>
+                Daily Chart
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[
+                styles.tabPill,
+                collectionTab === 'list' && styles.tabPillActive,
+              ]}
+              onPress={() => setCollectionTab('list')}>
+              <Ionicons
+                name="receipt-outline"
+                size={14}
+                color={
+                  collectionTab === 'list'
+                    ? AppColors.white
+                    : AppColors.mutedSlate
+                }
+              />
+              <Text
+                style={[
+                  styles.tabPillText,
+                  collectionTab === 'list' && styles.tabPillTextActive,
+                ]}>
+                Collections List ({executiveCollections.length})
+              </Text>
+            </Pressable>
           </View>
-          <View style={styles.statRow}>
-            <StatCard
-              title="Used Credit"
-              value={metrics.totalUsed}
-              subtitle="Outstanding balance"
-              iconName="trending-up-outline"
-              variant="primary"
+
+          {/* TAB 1: Collections Summary Chart */}
+          {collectionTab === 'chart' ? (
+            <CollectionSummaryChart
+              summary={collectionSummary}
+              fromDate={fromDate}
+              toDate={toDate}
+              isLoading={isLoadingSummary}
+              onOpenCalendar={() => setIsCalendarOpen(true)}
             />
-            <StatCard
-              title="Total Patrons"
-              value={metrics.totalPatrons}
-              subtitle="Assigned accounts"
-              iconName="people-outline"
-              variant="slate"
+          ) : (
+            /* TAB 2: Collections List Type */
+            <ExecutiveCollectionList
+              collections={executiveCollections}
+              isLoading={isLoadingCollections}
+              currency={currency}
+              fromDate={fromDate}
+              toDate={toDate}
+              onOpenCalendar={() => setIsCalendarOpen(true)}
             />
-          </View>
+          )}
         </View>
 
-        {/* Quick Action Button */}
-        {patrons.length > 0 ? (
-          <Pressable
-            style={({ pressed }) => [
-              styles.quickActionButton,
-              pressed && styles.quickActionButtonPressed,
-            ]}
-            onPress={() => handleOpenCollection(patrons[0])}>
-            <Ionicons name="add-circle-outline" size={20} color={AppColors.white} />
-            <Text style={styles.quickActionText}>Quick Record Collection</Text>
-          </Pressable>
-        ) : null}
-
-        {/* Patrons Directory Header */}
+        {/* ==================================================== */}
+        {/* PATRONS DIRECTORY SECTION                            */}
+        {/* ==================================================== */}
         <View style={styles.sectionHeaderRow}>
           <View>
             <Text style={styles.sectionTitle}>Patrons Directory</Text>
             <Text style={styles.sectionSubtitle}>
-              Manage credits and record collections
+              Tap any account to record collection
             </Text>
           </View>
           <View style={styles.countBadge}>
@@ -226,7 +260,7 @@ export default function DashboardScreen() {
         {/* Loading Spinner */}
         {isLoading && !isRefreshing && patrons.length === 0 ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={AppColors.primary} />
+            <ActivityIndicator size="large" color={AppColors.dominant} />
             <Text style={styles.loadingText}>Fetching Patrons Data...</Text>
           </View>
         ) : null}
@@ -253,33 +287,16 @@ export default function DashboardScreen() {
             </Text>
           </View>
         ) : null}
-
-        {/* Recent Collections Feed */}
-        {recentCollections.length > 0 ? (
-          <View style={styles.recentSection}>
-            <View style={styles.recentHeader}>
-              <Ionicons name="time-outline" size={18} color={AppColors.primaryDark} />
-              <Text style={styles.recentTitle}>Recent Collections</Text>
-            </View>
-            {recentCollections.slice(0, 3).map((item, index) => (
-              <View key={item.collection_id || index} style={styles.recentCard}>
-                <View style={styles.recentIcon}>
-                  <Ionicons name="checkmark" size={16} color={AppColors.success} />
-                </View>
-                <View style={styles.recentInfo}>
-                  <Text style={styles.recentName}>
-                    {item.patron_name ? `${item.patron_name} ` : ''}(#{item.patron_id})
-                  </Text>
-                  <Text style={styles.recentMeta}>
-                    Mode: {item.transaction_mode} • Status: {item.status || 'Pending'}
-                  </Text>
-                </View>
-                <Text style={styles.recentAmount}>₹{item.amount}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
       </ScrollView>
+
+      {/* Date Range Modal with react-native-calendar-picker */}
+      <DateRangeModal
+        visible={isCalendarOpen}
+        initialFromDate={fromDate}
+        initialToDate={toDate}
+        onClose={() => setIsCalendarOpen(false)}
+        onApply={handleDateRangeApply}
+      />
 
       {/* Collection Modal with Dropdown */}
       <CollectionModal
@@ -287,8 +304,10 @@ export default function DashboardScreen() {
         patron={selectedPatron}
         onClose={() => setIsCollectionModalOpen(false)}
         onSuccess={() => {
-          // Re-fetch to sync credits with server
+          // Sync patrons, executive collections, and summary
           dispatch(fetchPatronsThunk());
+          dispatch(fetchExecutiveCollectionsThunk({ fromDate, toDate }));
+          dispatch(fetchCollectionSummaryThunk({ fromDate, toDate }));
         }}
       />
     </View>
@@ -305,18 +324,23 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 36,
   },
   welcomeBanner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: AppColors.cardSecondary,
+    backgroundColor: AppColors.card,
     borderWidth: 1,
-    borderColor: AppColors.primaryLight,
+    borderColor: AppColors.border,
     padding: 16,
     borderRadius: 16,
-    marginBottom: 16,
+    marginBottom: 14,
+    shadowColor: AppColors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    elevation: 2,
   },
   welcomeInfo: {
     flex: 1,
@@ -329,71 +353,60 @@ const styles = StyleSheet.create({
   welcomeName: {
     fontSize: 20,
     fontWeight: '800',
-    color: AppColors.primaryDark,
+    color: AppColors.surface,
     marginVertical: 2,
-  },
-  groupPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FDECEC',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginTop: 4,
-  },
-  groupPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: AppColors.primaryDark,
   },
   welcomeMobile: {
     fontSize: 12,
     fontWeight: '600',
-    color: AppColors.mutedSlate,
+    color: AppColors.dominant,
     marginTop: 4,
   },
   welcomeBadgeIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#FCECEC',
+    backgroundColor: AppColors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  statsContainer: {
-    gap: 12,
-    marginBottom: 16,
-  },
-  statRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  quickActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: AppColors.primary,
-    height: 48,
-    borderRadius: 12,
+  /* Collections & Analytics Section */
+  collectionsSection: {
+    marginTop: 4,
     marginBottom: 20,
-    elevation: 3,
-    shadowColor: AppColors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
   },
-  quickActionButtonPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.99 }],
+  tabPillsRow: {
+    flexDirection: 'row',
+    backgroundColor: AppColors.cardSecondary,
+    borderWidth: 1,
+    borderColor: AppColors.border,
+    padding: 3,
+    borderRadius: 12,
+    marginBottom: 12,
+    gap: 4,
   },
-  quickActionText: {
-    color: AppColors.white,
-    fontSize: 15,
+  tabPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 9,
+  },
+  tabPillActive: {
+    backgroundColor: AppColors.dominant,
+    elevation: 2,
+  },
+  tabPillText: {
+    fontSize: 12,
     fontWeight: '700',
+    color: AppColors.mutedSlate,
   },
+  tabPillTextActive: {
+    color: AppColors.white,
+  },
+  /* Patrons Directory Header */
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -403,7 +416,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: AppColors.primaryDark,
+    color: AppColors.surface,
   },
   sectionSubtitle: {
     fontSize: 12,
@@ -411,9 +424,9 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   countBadge: {
-    backgroundColor: AppColors.cardSecondary,
+    backgroundColor: AppColors.primaryLight,
     borderWidth: 1,
-    borderColor: AppColors.primaryLight,
+    borderColor: AppColors.primaryBorder,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -421,7 +434,7 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontSize: 12,
     fontWeight: '800',
-    color: AppColors.primaryDark,
+    color: AppColors.dominant,
   },
   searchBar: {
     flexDirection: 'row',
@@ -490,59 +503,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: AppColors.mutedSlate,
     marginTop: 4,
-  },
-  recentSection: {
-    marginTop: 8,
-    backgroundColor: AppColors.card,
-    borderWidth: 1,
-    borderColor: AppColors.border,
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-  },
-  recentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  recentTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: AppColors.primaryDark,
-  },
-  recentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FAF7F7',
-    padding: 10,
-    borderRadius: 10,
-    gap: 10,
-  },
-  recentIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: AppColors.successLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recentInfo: {
-    flex: 1,
-  },
-  recentName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: AppColors.textPrimary,
-  },
-  recentMeta: {
-    fontSize: 11,
-    color: AppColors.mutedSlate,
-    marginTop: 2,
-  },
-  recentAmount: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: AppColors.primaryDark,
   },
 });

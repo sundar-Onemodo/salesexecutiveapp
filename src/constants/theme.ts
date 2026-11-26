@@ -1,6 +1,11 @@
 /**
  * Theme configuration enforcing light mode with brand palette:
- * #d93030, #701414, #eb9393, #877474, #bcbcbc
+ * "Executive Cobalt & Emerald Ledger"
+ * Primary: #1A56DB (Precision Cobalt Blue)
+ * Surface: #0B1527 (Midnight Slate Navy)
+ * Success: #059669 (Emerald Green)
+ * Warning: #D97706 (Amber Gold)
+ * Ice:     #EFF6FF (Cobalt Ice Tint)
  */
 
 import '@/global.css';
@@ -13,19 +18,18 @@ export const Colors = {
     text: AppColors.textPrimary,
     background: AppColors.background,
     backgroundElement: AppColors.cardSecondary,
-    backgroundSelected: '#FDECEC',
+    backgroundSelected: AppColors.primaryLight,
     textSecondary: AppColors.mutedSlate,
     primary: AppColors.primary,
     primaryDark: AppColors.primaryDark,
     primaryLight: AppColors.primaryLight,
     border: AppColors.border,
   },
-  // In light mode app, dark falls back to light
   dark: {
     text: AppColors.textPrimary,
     background: AppColors.background,
     backgroundElement: AppColors.cardSecondary,
-    backgroundSelected: '#FDECEC',
+    backgroundSelected: AppColors.primaryLight,
     textSecondary: AppColors.mutedSlate,
     primary: AppColors.primary,
     primaryDark: AppColors.primaryDark,

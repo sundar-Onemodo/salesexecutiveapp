@@ -20,37 +20,42 @@ export const StatCard: React.FC<StatCardProps> = ({
 }) => {
   const getColors = () => {
     switch (variant) {
-      case 'primary':
-        return {
-          bg: AppColors.card,
-          border: AppColors.primaryLight,
-          iconBg: '#FEECEC',
-          iconColor: AppColors.primary,
-          valColor: AppColors.primary,
-        };
       case 'dark':
+        // Available Credit (Precision Cobalt)
         return {
           bg: AppColors.card,
-          border: AppColors.primaryLight,
-          iconBg: '#F3E5E5',
-          iconColor: AppColors.primaryDark,
-          valColor: AppColors.primaryDark,
+          border: AppColors.primaryBorder,
+          iconBg: AppColors.primaryLight,
+          iconColor: AppColors.dominant,
+          valColor: AppColors.dominant,
+        };
+      case 'light':
+        // Credit Limit (Midnight Navy)
+        return {
+          bg: AppColors.card,
+          border: AppColors.border,
+          iconBg: AppColors.cardSecondary,
+          iconColor: AppColors.surface,
+          valColor: AppColors.surface,
+        };
+      case 'primary':
+        // Used Credit (Amber Gold - Outstanding)
+        return {
+          bg: AppColors.card,
+          border: AppColors.warningBorder,
+          iconBg: AppColors.warningLight,
+          iconColor: AppColors.warning,
+          valColor: AppColors.warning,
         };
       case 'slate':
-        return {
-          bg: AppColors.card,
-          border: AppColors.border,
-          iconBg: '#F1EEEE',
-          iconColor: AppColors.mutedSlate,
-          valColor: AppColors.textPrimary,
-        };
       default:
+        // Total Patrons (Emerald Growth)
         return {
           bg: AppColors.card,
-          border: AppColors.border,
-          iconBg: '#F8F4F4',
-          iconColor: AppColors.primary,
-          valColor: AppColors.primaryDark,
+          border: AppColors.successBorder,
+          iconBg: AppColors.successLight,
+          iconColor: AppColors.success,
+          valColor: AppColors.success,
         };
     }
   };
@@ -85,11 +90,11 @@ const styles = StyleSheet.create({
     minWidth: 145,
     padding: 14,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     elevation: 2,
     shadowColor: AppColors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 4,
   },
   topRow: {
@@ -100,7 +105,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     color: AppColors.mutedSlate,
     textTransform: 'uppercase',
     letterSpacing: 0.5,

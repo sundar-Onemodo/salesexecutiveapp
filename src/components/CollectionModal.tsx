@@ -8,7 +8,6 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
-  TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -21,6 +20,7 @@ import { submitCollectionThunk, clearLastCollection } from '@/store/slices/patro
 interface CollectionModalProps {
   visible: boolean;
   patron: Patron | null;
+  initialMode?: TransactionMode;
   onClose: () => void;
   onSuccess?: () => void;
 }
@@ -28,6 +28,7 @@ interface CollectionModalProps {
 export const CollectionModal: React.FC<CollectionModalProps> = ({
   visible,
   patron,
+  initialMode = 'Cash',
   onClose,
   onSuccess,
 }) => {
@@ -37,13 +38,13 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
   );
 
   const [amount, setAmount] = useState('');
-  const [transactionMode, setTransactionMode] = useState<TransactionMode>('Cash');
+  const [transactionMode, setTransactionMode] = useState<TransactionMode>(initialMode);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const resetForm = () => {
     setAmount('');
-    setTransactionMode('Cash');
+    setTransactionMode(initialMode);
     setIsDropdownOpen(false);
     setValidationError(null);
     dispatch(clearLastCollection());
@@ -115,101 +116,115 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
       animationType="slide"
       onRequestClose={handleClose}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         style={styles.overlay}>
-        <TouchableWithoutFeedback onPress={() => setIsDropdownOpen(false)}>
-          <View style={styles.backdrop}>
-            <View style={styles.sheetContainer}>
-              {/* Sheet Header */}
-              <View style={styles.sheetHeader}>
-                <View style={styles.indicator} />
-                <View style={styles.headerRow}>
-                  <View>
-                    <Text style={styles.sheetTitle}>Executive Collection</Text>
-                    <Text style={styles.sheetSubtitle}>Record a new patron payment</Text>
-                  </View>
-                  <Pressable style={styles.closeButton} onPress={handleClose}>
-                    <Ionicons name="close" size={22} color={AppColors.mutedSlate} />
-                  </Pressable>
+        <View style={styles.backdrop}>
+          {/* Backdrop Tap to Dismiss Dropdown or Close */}
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => {
+              if (isDropdownOpen) {
+                setIsDropdownOpen(false);
+              } else {
+                handleClose();
+              }
+            }}
+          />
+
+          <View style={styles.sheetContainer}>
+            {/* Sheet Header */}
+            <View style={styles.sheetHeader}>
+              <View style={styles.indicator} />
+              <View style={styles.headerRow}>
+                <View>
+                  <Text style={styles.sheetTitle}>Executive Collection</Text>
+                  <Text style={styles.sheetSubtitle}>Record a new patron payment</Text>
                 </View>
+                <Pressable style={styles.closeButton} onPress={handleClose} hitSlop={8}>
+                  <Ionicons name="close" size={22} color={AppColors.mutedSlate} />
+                </Pressable>
               </View>
+            </View>
 
-              <ScrollView
-                style={styles.sheetBody}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}>
-                {/* Success State */}
-                {lastCollectionSuccess ? (
-                  <View style={styles.successContainer}>
-                    <View style={styles.successIconBadge}>
-                      <Ionicons name="checkmark-circle" size={54} color={AppColors.success} />
+            <ScrollView
+              style={styles.sheetBody}
+              contentContainerStyle={styles.sheetContentContainer}
+              keyboardShouldPersistTaps="handled"
+              automaticallyAdjustKeyboardInsets={true}
+              showsVerticalScrollIndicator={false}>
+              {/* Success State */}
+              {lastCollectionSuccess ? (
+                <View style={styles.successContainer}>
+                  <View style={styles.successIconBadge}>
+                    <Ionicons name="checkmark-circle" size={54} color={AppColors.dominant} />
+                  </View>
+                  <Text style={styles.successTitle}>Collection Recorded!</Text>
+                  <Text style={styles.successSubtitle}>
+                    Payment of ₹{lastCollectionSuccess.amount} recorded for {patron.name}
+                  </Text>
+
+                  <View style={styles.receiptBox}>
+                    <View style={styles.receiptRow}>
+                      <Text style={styles.receiptLabel}>Collection ID</Text>
+                      <Text style={styles.receiptValue}>
+                        #{lastCollectionSuccess.collection_id}
+                      </Text>
                     </View>
-                    <Text style={styles.successTitle}>Collection Successful!</Text>
-                    <Text style={styles.successSubtitle}>
-                      Payment of ₹{lastCollectionSuccess.amount} recorded for {patron.name}
-                    </Text>
-
-                    <View style={styles.receiptBox}>
-                      <View style={styles.receiptRow}>
-                        <Text style={styles.receiptLabel}>Collection ID</Text>
-                        <Text style={styles.receiptValue}>
-                          #{lastCollectionSuccess.collection_id}
+                    <View style={styles.receiptRow}>
+                      <Text style={styles.receiptLabel}>Status</Text>
+                      <View style={styles.statusBadge}>
+                        <Text style={styles.statusBadgeText}>
+                          {lastCollectionSuccess.status?.toUpperCase() || 'COMPLETED'}
                         </Text>
                       </View>
-                      <View style={styles.receiptRow}>
-                        <Text style={styles.receiptLabel}>Status</Text>
-                        <View style={styles.statusBadge}>
-                          <Text style={styles.statusBadgeText}>
-                            {lastCollectionSuccess.status?.toUpperCase() || 'COMPLETED'}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.receiptRow}>
-                        <Text style={styles.receiptLabel}>Mode</Text>
-                        <Text style={styles.receiptValue}>{transactionMode}</Text>
-                      </View>
-                      {lastCollectionSuccess.request_id ? (
-                        <View style={styles.receiptRow}>
-                          <Text style={styles.receiptLabel}>Request ID</Text>
-                          <Text style={styles.receiptValueSmall} numberOfLines={1}>
-                            {lastCollectionSuccess.request_id}
-                          </Text>
-                        </View>
-                      ) : null}
                     </View>
-
-                    <Pressable
-                      style={styles.doneButton}
-                      onPress={handleClose}>
-                      <Text style={styles.doneButtonText}>Done</Text>
-                    </Pressable>
+                    <View style={styles.receiptRow}>
+                      <Text style={styles.receiptLabel}>Transaction Mode</Text>
+                      <Text style={styles.receiptValue}>{transactionMode}</Text>
+                    </View>
+                    {lastCollectionSuccess.request_id ? (
+                      <View style={styles.receiptRow}>
+                        <Text style={styles.receiptLabel}>Request ID</Text>
+                        <Text style={styles.receiptValueSmall} numberOfLines={1}>
+                          {lastCollectionSuccess.request_id}
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
-                ) : (
-                  <>
-                    {/* Patron Banner */}
-                    <View style={styles.patronBanner}>
+
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.doneButton,
+                      pressed && styles.doneButtonPressed,
+                    ]}
+                    onPress={handleClose}
+                    hitSlop={12}>
+                    <Text style={styles.doneButtonText}>Done</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                  /* Form State */
+                  <View style={styles.formContainer}>
+                    {/* Patron Info Card */}
+                    <View style={styles.patronCard}>
                       <View style={styles.patronAvatar}>
                         <Text style={styles.patronAvatarText}>
-                          {patron.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')
-                            .slice(0, 2)
-                            .toUpperCase()}
+                          {patron.name.slice(0, 2).toUpperCase()}
                         </Text>
                       </View>
                       <View style={styles.patronDetails}>
                         <Text style={styles.patronName}>{patron.name}</Text>
                         <Text style={styles.patronId}>Patron ID: #{patron.id}</Text>
                         <Text style={styles.patronCredit}>
-                          Available: ₹{parseFloat(patron.available_credit).toLocaleString('en-IN')}
+                          Avail Credit: ₹{parseFloat(patron.available_credit).toLocaleString('en-IN')}
                         </Text>
                       </View>
                     </View>
 
                     {/* Amount Input */}
                     <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Collection Amount (INR)</Text>
+                      <Text style={styles.label}>Collection Amount (₹)</Text>
                       <View
                         style={[
                           styles.amountInputContainer,
@@ -243,9 +258,11 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
                           <Ionicons
                             name={getModeIcon(transactionMode)}
                             size={18}
-                            color={AppColors.primaryDark}
+                            color={AppColors.dominant}
                           />
-                          <Text style={styles.dropdownTriggerText}>{transactionMode}</Text>
+                          <Text style={styles.dropdownTriggerText}>
+                            {transactionMode}
+                          </Text>
                         </View>
                         <Ionicons
                           name={isDropdownOpen ? 'chevron-up' : 'chevron-down'}
@@ -254,11 +271,11 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
                         />
                       </Pressable>
 
-                      {/* Dropdown Options List */}
+                      {/* Dropdown Menu Options */}
                       {isDropdownOpen ? (
                         <View style={styles.dropdownMenu}>
                           {TRANSACTION_MODES.map((mode) => {
-                            const isSelected = mode === transactionMode;
+                            const isSelected = transactionMode === mode;
                             return (
                               <Pressable
                                 key={mode}
@@ -270,10 +287,10 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
                                 <View style={styles.selectedModeRow}>
                                   <Ionicons
                                     name={getModeIcon(mode)}
-                                    size={16}
+                                    size={18}
                                     color={
                                       isSelected
-                                        ? AppColors.primary
+                                        ? AppColors.dominant
                                         : AppColors.mutedSlate
                                     }
                                   />
@@ -288,8 +305,8 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
                                 {isSelected ? (
                                   <Ionicons
                                     name="checkmark"
-                                    size={18}
-                                    color={AppColors.primary}
+                                    size={16}
+                                    color={AppColors.dominant}
                                   />
                                 ) : null}
                               </Pressable>
@@ -299,7 +316,10 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
                       ) : null}
                     </View>
 
-                    {error ? <Text style={styles.serverErrorText}>{error}</Text> : null}
+                    {/* Server Error Message */}
+                    {error ? (
+                      <Text style={styles.serverErrorText}>{error}</Text>
+                    ) : null}
 
                     {/* Submit Button */}
                     <Pressable
@@ -313,26 +333,30 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
                         <ActivityIndicator color={AppColors.white} size="small" />
                       ) : (
                         <>
-                          <Ionicons name="checkmark-done-outline" size={18} color={AppColors.white} />
-                          <Text style={styles.submitButtonText}>Submit Collection</Text>
+                          <Ionicons
+                            name="arrow-forward-circle"
+                            size={20}
+                            color={AppColors.white}
+                          />
+                          <Text style={styles.submitButtonText}>
+                            Record Collection
+                          </Text>
                         </>
                       )}
                     </Pressable>
-                  </>
+                  </View>
                 )}
               </ScrollView>
             </View>
           </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-    </Modal>
+        </KeyboardAvoidingView>
+      </Modal>
   );
 };
 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
   },
   backdrop: {
     flex: 1,
@@ -343,38 +367,38 @@ const styles = StyleSheet.create({
     backgroundColor: AppColors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     maxHeight: '85%',
+    elevation: 20,
     shadowColor: AppColors.shadow,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 10,
+    shadowRadius: 12,
   },
   sheetHeader: {
+    alignItems: 'center',
     paddingTop: 12,
+    paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0EAEA',
+    borderBottomColor: AppColors.borderMuted,
   },
   indicator: {
-    width: 44,
+    width: 36,
     height: 4,
-    backgroundColor: AppColors.border,
     borderRadius: 2,
-    alignSelf: 'center',
+    backgroundColor: AppColors.border,
     marginBottom: 12,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    width: '100%',
   },
   sheetTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: AppColors.primaryDark,
+    fontWeight: '800',
+    color: AppColors.surface,
   },
   sheetSubtitle: {
     fontSize: 12,
@@ -385,19 +409,22 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F5EFEF',
+    backgroundColor: AppColors.primaryTint,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sheetBody: {
-    paddingVertical: 16,
+    padding: 20,
   },
-  patronBanner: {
+  formContainer: {
+    paddingBottom: 24,
+  },
+  patronCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: AppColors.cardSecondary,
+    backgroundColor: AppColors.primaryTint,
     borderWidth: 1,
-    borderColor: AppColors.primaryLight,
+    borderColor: AppColors.border,
     padding: 14,
     borderRadius: 14,
     marginBottom: 18,
@@ -407,14 +434,14 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#FDECEC',
+    backgroundColor: AppColors.iceBlue,
     justifyContent: 'center',
     alignItems: 'center',
   },
   patronAvatarText: {
     fontSize: 15,
-    fontWeight: '700',
-    color: AppColors.primaryDark,
+    fontWeight: '800',
+    color: AppColors.dominant,
   },
   patronDetails: {
     flex: 1,
@@ -431,8 +458,8 @@ const styles = StyleSheet.create({
   },
   patronCredit: {
     fontSize: 12,
-    fontWeight: '600',
-    color: AppColors.primaryDark,
+    fontWeight: '700',
+    color: AppColors.dominant,
     marginTop: 2,
   },
   inputGroup: {
@@ -441,7 +468,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: AppColors.textPrimary,
+    color: AppColors.surface,
     marginBottom: 8,
   },
   amountInputContainer: {
@@ -456,8 +483,8 @@ const styles = StyleSheet.create({
   },
   currencyPrefix: {
     fontSize: 20,
-    fontWeight: '700',
-    color: AppColors.primaryDark,
+    fontWeight: '800',
+    color: AppColors.dominant,
     marginRight: 8,
   },
   amountInput: {
@@ -522,10 +549,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F5EFEF',
+    borderBottomColor: AppColors.borderMuted,
   },
   dropdownItemSelected: {
-    backgroundColor: '#FFF5F5',
+    backgroundColor: AppColors.iceBlue,
   },
   dropdownItemText: {
     fontSize: 14,
@@ -533,11 +560,11 @@ const styles = StyleSheet.create({
     color: AppColors.textPrimary,
   },
   dropdownItemTextSelected: {
-    fontWeight: '700',
-    color: AppColors.primary,
+    fontWeight: '800',
+    color: AppColors.dominant,
   },
   submitButton: {
-    backgroundColor: AppColors.primary,
+    backgroundColor: AppColors.dominant,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -546,18 +573,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 10,
     elevation: 3,
-    shadowColor: AppColors.primary,
+    shadowColor: AppColors.dominant,
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 5,
   },
   submitButtonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   submitButtonText: {
-    color: AppColors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
+    color: AppColors.white,
   },
   successContainer: {
     alignItems: 'center',
@@ -569,24 +596,24 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: AppColors.primaryDark,
+    color: AppColors.surface,
     marginBottom: 6,
   },
   successSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: AppColors.mutedSlate,
     textAlign: 'center',
     marginBottom: 20,
   },
   receiptBox: {
     width: '100%',
-    backgroundColor: AppColors.cardSecondary,
+    backgroundColor: AppColors.primaryTint,
     borderWidth: 1,
     borderColor: AppColors.border,
     borderRadius: 14,
     padding: 16,
     gap: 12,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   receiptRow: {
     flexDirection: 'row',
@@ -601,36 +628,43 @@ const styles = StyleSheet.create({
   receiptValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: AppColors.textPrimary,
+    color: AppColors.surface,
   },
   receiptValueSmall: {
     fontSize: 11,
     fontWeight: '600',
-    color: AppColors.textSecondary,
-    maxWidth: '60%',
+    color: AppColors.mutedSlate,
+    maxWidth: 160,
   },
   statusBadge: {
-    backgroundColor: AppColors.warningLight,
+    backgroundColor: AppColors.tealLight,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
   },
   statusBadgeText: {
-    color: AppColors.warning,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
+    color: AppColors.surface,
   },
   doneButton: {
     width: '100%',
-    height: 50,
-    backgroundColor: AppColors.primaryDark,
+    backgroundColor: AppColors.dominant,
+    height: 48,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  doneButtonPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.99 }],
+  },
   doneButtonText: {
-    color: AppColors.white,
     fontSize: 15,
     fontWeight: '700',
+    color: AppColors.white,
+  },
+  sheetContentContainer: {
+    paddingBottom: 40,
   },
 });

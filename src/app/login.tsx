@@ -25,6 +25,8 @@ import {
   clearError,
 } from '@/store/slices/authSlice';
 
+const OTP_EXPIRY_SECONDS = 600; // 10 minutes
+
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
@@ -40,6 +42,9 @@ export default function LoginScreen() {
   const [mobileNumber, setMobileNumber] = useState('');
   const [mobileError, setMobileError] = useState<string | null>(null);
   const [enteredOtp, setEnteredOtp] = useState('');
+  const [timeLeft, setTimeLeft] = useState(OTP_EXPIRY_SECONDS);
+  const [timerKey, setTimerKey] = useState(0);
+  const [resendSuccessMessage, setResendSuccessMessage] = useState<string | null>(null);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -47,6 +52,31 @@ export default function LoginScreen() {
       router.replace('/(tabs)' as any);
     }
   }, [isAuthenticated]);
+
+  // 10-minute countdown timer effect
+  useEffect(() => {
+    if (!otpRequested) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [otpRequested, timerKey]);
+
+  const formatTimer = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const validateMobile = (num: string): boolean => {
     const clean = num.replace(/\D/g, '');
@@ -65,12 +95,30 @@ export default function LoginScreen() {
   const handleSendOtp = async () => {
     Keyboard.dismiss();
     dispatch(clearError());
+    setResendSuccessMessage(null);
     if (!validateMobile(mobileNumber)) {
       return;
     }
 
     const clean = mobileNumber.replace(/\D/g, '');
-    await dispatch(requestOtpThunk(clean));
+    const result = await dispatch(requestOtpThunk(clean));
+    if (requestOtpThunk.fulfilled.match(result)) {
+      setTimeLeft(OTP_EXPIRY_SECONDS);
+      setTimerKey((k) => k + 1);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    Keyboard.dismiss();
+    dispatch(clearError());
+    setEnteredOtp('');
+    const clean = mobileNumber.replace(/\D/g, '');
+    const result = await dispatch(requestOtpThunk(clean));
+    if (requestOtpThunk.fulfilled.match(result)) {
+      setTimeLeft(OTP_EXPIRY_SECONDS);
+      setTimerKey((k) => k + 1);
+      setResendSuccessMessage('New OTP has been sent to your mobile number.');
+    }
   };
 
   const handleVerifyOtp = async (otp: string) => {
@@ -86,6 +134,8 @@ export default function LoginScreen() {
   const handleEditMobile = () => {
     dispatch(resetOtpState());
     setEnteredOtp('');
+    setTimeLeft(OTP_EXPIRY_SECONDS);
+    setResendSuccessMessage(null);
   };
 
   return (
@@ -185,19 +235,26 @@ export default function LoginScreen() {
 
                 {mobileError ? (
                   <View style={styles.errorBanner}>
-                    <Ionicons name="alert-circle" size={14} color={AppColors.error} />
-                    <Text style={styles.errorText}>{mobileError}</Text>
+                    <Ionicons
+                      name="alert-circle"
+                      size={14}
+                      color={AppColors.error}
+                    />
+                    <Text style={styles.errorBannerText}>{mobileError}</Text>
                   </View>
                 ) : null}
 
                 {error ? (
                   <View style={styles.errorBanner}>
-                    <Ionicons name="alert-circle" size={14} color={AppColors.error} />
-                    <Text style={styles.errorText}>{error}</Text>
+                    <Ionicons
+                      name="alert-circle"
+                      size={14}
+                      color={AppColors.error}
+                    />
+                    <Text style={styles.errorBannerText}>{error}</Text>
                   </View>
                 ) : null}
 
-                {/* Submit CTA */}
                 <Pressable
                   style={({ pressed }) => [
                     styles.ctaButton,
@@ -211,76 +268,173 @@ export default function LoginScreen() {
                   ) : (
                     <>
                       <Text style={styles.ctaButtonText}>Get Verification Code</Text>
-                      <Ionicons name="arrow-forward" size={18} color={AppColors.white} />
+                      <Ionicons
+                        name="arrow-forward"
+                        size={18}
+                        color={AppColors.white}
+                      />
                     </>
                   )}
                 </Pressable>
               </View>
             ) : (
-              /* Stage 2: 6-Digit Separate OTP Boxes */
+              /* Stage 2: OTP Entry */
               <View style={styles.stageContainer}>
-                <View style={styles.mobileConfirmationBox}>
-                  <View style={styles.mobileInfo}>
-                    <Ionicons
-                      name="phone-portrait-outline"
-                      size={18}
-                      color={AppColors.primaryDark}
-                    />
-                    <Text style={styles.mobileConfirmationText}>
+                {/* Mobile Preview & Edit */}
+                <View style={styles.mobilePreviewRow}>
+                  <View style={styles.mobilePreviewTexts}>
+                    <Text style={styles.mobilePreviewLabel}>Sent code to</Text>
+                    <Text style={styles.mobilePreviewNumber}>
                       +91 {mobileNumber}
                     </Text>
                   </View>
-                  <Pressable style={styles.editMobileBtn} onPress={handleEditMobile}>
-                    <Ionicons name="pencil" size={14} color={AppColors.primary} />
+                  <Pressable
+                    style={styles.editMobileBtn}
+                    onPress={handleEditMobile}>
+                    <Ionicons
+                      name="pencil-outline"
+                      size={14}
+                      color={AppColors.dominant}
+                    />
                     <Text style={styles.editMobileText}>Change</Text>
                   </Pressable>
                 </View>
 
+                {/* Server info message */}
                 {otpMessage ? (
-                  <View style={styles.messageBanner}>
+                  <View style={styles.infoBanner}>
                     <Ionicons
                       name="information-circle"
-                      size={16}
-                      color={AppColors.primaryDark}
+                      size={15}
+                      color={AppColors.dominant}
                     />
-                    <Text style={styles.messageBannerText}>{otpMessage}</Text>
+                    <Text style={styles.infoBannerText}>{otpMessage}</Text>
                   </View>
                 ) : null}
 
-                <Text style={styles.otpPromptText}>
-                  Enter the 6-digit code sent to your mobile
-                </Text>
+                {/* Resend success notice */}
+                {resendSuccessMessage ? (
+                  <View style={styles.resendSuccessBanner}>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={15}
+                      color={AppColors.success}
+                    />
+                    <Text style={styles.resendSuccessText}>
+                      {resendSuccessMessage}
+                    </Text>
+                  </View>
+                ) : null}
 
-                {/* 6 Individual OTP Boxes with Auto-Submit on 6th digit */}
-                <OtpInput
-                  length={6}
-                  onComplete={(code) => {
-                    setEnteredOtp(code);
-                    handleVerifyOtp(code);
-                  }}
-                  error={error}
-                  disabled={isVerifying}
-                />
+                {/* 6-Digit OTP Box Grid */}
+                <View style={styles.otpWrapper}>
+                  <Text style={styles.otpPrompt}>
+                    Enter the 6-digit code below:
+                  </Text>
+                  <OtpInput
+                    key={timerKey}
+                    length={6}
+                    onComplete={(otp) => {
+                      setEnteredOtp(otp);
+                      if (timeLeft > 0) {
+                        handleVerifyOtp(otp);
+                      }
+                    }}
+                    error={
+                      timeLeft === 0
+                        ? 'This OTP has expired. Please tap Resend OTP below.'
+                        : error
+                    }
+                    disabled={isVerifying || timeLeft === 0}
+                  />
+                </View>
 
+                {/* 10-Minute Countdown Timer or Resend OTP Button */}
+                <View style={styles.timerSection}>
+                  {timeLeft > 0 ? (
+                    <View style={styles.timerRow}>
+                      <Ionicons
+                        name="time-outline"
+                        size={15}
+                        color={AppColors.mutedSlate}
+                      />
+                      <Text style={styles.timerText}>
+                        OTP expires in{' '}
+                        <Text style={styles.timerDigits}>{formatTimer(timeLeft)}</Text>
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.expiredWrapper}>
+                      <View style={styles.expiredBanner}>
+                        <Ionicons
+                          name="alert-circle"
+                          size={15}
+                          color={AppColors.warning}
+                        />
+                        <Text style={styles.expiredText}>
+                          OTP expired after 10 mins
+                        </Text>
+                      </View>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.resendButton,
+                          isLoading && styles.resendButtonDisabled,
+                          pressed && styles.resendButtonPressed,
+                        ]}
+                        disabled={isLoading}
+                        onPress={handleResendOtp}>
+                        {isLoading ? (
+                          <ActivityIndicator
+                            size="small"
+                            color={AppColors.dominant}
+                          />
+                        ) : (
+                          <>
+                            <Ionicons
+                              name="refresh"
+                              size={16}
+                              color={AppColors.dominant}
+                            />
+                            <Text style={styles.resendButtonText}>
+                              Resend OTP
+                            </Text>
+                          </>
+                        )}
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+
+                {/* Manual Verify CTA */}
                 {isVerifying ? (
-                  <View style={styles.verifyingContainer}>
-                    <ActivityIndicator color={AppColors.primary} size="small" />
-                    <Text style={styles.verifyingText}>Verifying code with server...</Text>
+                  <View style={styles.verifyingIndicator}>
+                    <ActivityIndicator size="small" color={AppColors.dominant} />
+                    <Text style={styles.verifyingText}>
+                      Verifying with Onemodo Server...
+                    </Text>
                   </View>
                 ) : (
                   <Pressable
                     style={({ pressed }) => [
                       styles.ctaButton,
-                      styles.verifyButton,
+                      (enteredOtp.length !== 6 || timeLeft === 0) &&
+                        styles.ctaButtonDisabled,
                       pressed && styles.ctaButtonPressed,
                     ]}
+                    disabled={
+                      enteredOtp.length !== 6 || isVerifying || timeLeft === 0
+                    }
                     onPress={() => {
-                      if (enteredOtp.length === 6) {
+                      if (enteredOtp.length === 6 && timeLeft > 0) {
                         handleVerifyOtp(enteredOtp);
                       }
                     }}>
                     <Text style={styles.ctaButtonText}>Verify Code</Text>
-                    <Ionicons name="checkmark-circle" size={18} color={AppColors.white} />
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={18}
+                      color={AppColors.white}
+                    />
                   </Pressable>
                 )}
               </View>
@@ -326,12 +480,12 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 18,
-    backgroundColor: AppColors.primary,
+    backgroundColor: AppColors.dominant,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 14,
     elevation: 4,
-    shadowColor: AppColors.primary,
+    shadowColor: AppColors.dominant,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -345,7 +499,7 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontSize: 26,
     fontWeight: '900',
-    color: AppColors.primaryDark,
+    color: AppColors.surface,
     letterSpacing: 2,
   },
   brandTitleCompact: {
@@ -356,9 +510,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   executiveBadge: {
-    backgroundColor: '#FDECEC',
+    backgroundColor: AppColors.primaryLight,
     borderWidth: 1,
-    borderColor: AppColors.primaryLight,
+    borderColor: AppColors.primaryBorder,
     paddingHorizontal: 12,
     paddingVertical: 3,
     borderRadius: 8,
@@ -366,7 +520,7 @@ const styles = StyleSheet.create({
   executiveBadgeText: {
     fontSize: 11,
     fontWeight: '800',
-    color: AppColors.primaryDark,
+    color: AppColors.dominant,
     letterSpacing: 1,
   },
   welcomeSubtitle: {
@@ -397,7 +551,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: AppColors.textPrimary,
+    color: AppColors.surface,
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -426,8 +580,8 @@ const styles = StyleSheet.create({
   },
   countryCode: {
     fontSize: 15,
-    fontWeight: '700',
-    color: AppColors.primaryDark,
+    fontWeight: '800',
+    color: AppColors.dominant,
   },
   phoneInput: {
     flex: 1,
@@ -451,14 +605,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 8,
   },
-  errorText: {
+  errorBannerText: {
     fontSize: 12,
     color: AppColors.error,
     fontWeight: '600',
     flex: 1,
   },
   ctaButton: {
-    backgroundColor: AppColors.primary,
+    backgroundColor: AppColors.dominant,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -467,48 +621,48 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 18,
     elevation: 3,
-    shadowColor: AppColors.primary,
+    shadowColor: AppColors.dominant,
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 5,
-  },
-  verifyButton: {
-    marginTop: 14,
-    height: 48,
   },
   ctaButtonPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.99 }],
   },
   ctaButtonDisabled: {
-    opacity: 0.7,
+    opacity: 0.5,
   },
   ctaButtonText: {
     color: AppColors.white,
     fontSize: 15,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
-  mobileConfirmationBox: {
+  mobilePreviewRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FAF5F5',
-    borderWidth: 1,
-    borderColor: AppColors.primaryLight,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginBottom: 10,
-  },
-  mobileInfo: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: AppColors.cardSecondary,
+    borderWidth: 1,
+    borderColor: AppColors.border,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
   },
-  mobileConfirmationText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: AppColors.primaryDark,
+  mobilePreviewTexts: {
+    flex: 1,
+  },
+  mobilePreviewLabel: {
+    fontSize: 11,
+    color: AppColors.mutedSlate,
+    fontWeight: '500',
+  },
+  mobilePreviewNumber: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: AppColors.surface,
+    marginTop: 2,
   },
   editMobileBtn: {
     flexDirection: 'row',
@@ -517,44 +671,141 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: '#FDECEC',
+    backgroundColor: AppColors.card,
+    borderWidth: 1,
+    borderColor: AppColors.border,
   },
   editMobileText: {
     fontSize: 12,
     fontWeight: '700',
-    color: AppColors.primary,
+    color: AppColors.dominant,
   },
-  messageBanner: {
+  infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F3F4F6',
-    padding: 8,
+    backgroundColor: AppColors.primaryLight,
+    borderWidth: 1,
+    borderColor: AppColors.primaryBorder,
+    padding: 10,
     borderRadius: 8,
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  messageBannerText: {
+  infoBannerText: {
+    fontSize: 12,
+    color: AppColors.dominant,
+    fontWeight: '600',
+    flex: 1,
+  },
+  resendSuccessBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: AppColors.successLight,
+    borderWidth: 1,
+    borderColor: AppColors.successBorder,
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  resendSuccessText: {
+    fontSize: 12,
+    color: AppColors.success,
+    fontWeight: '600',
+    flex: 1,
+  },
+  otpWrapper: {
+    marginVertical: 4,
+  },
+  otpPrompt: {
+    fontSize: 12,
+    color: AppColors.mutedSlate,
+    fontWeight: '600',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  timerSection: {
+    marginTop: 10,
+    marginBottom: 4,
+    alignItems: 'center',
+  },
+  timerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: AppColors.primaryLight,
+    borderWidth: 1,
+    borderColor: AppColors.primaryBorder,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  timerText: {
     fontSize: 12,
     color: AppColors.mutedSlate,
     fontWeight: '500',
   },
-  otpPromptText: {
-    fontSize: 13,
-    color: AppColors.textPrimary,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 2,
+  timerDigits: {
+    fontWeight: '800',
+    color: AppColors.dominant,
   },
-  verifyingContainer: {
+  expiredWrapper: {
+    alignItems: 'center',
+    width: '100%',
+    gap: 8,
+  },
+  expiredBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: AppColors.warningLight,
+    borderWidth: 1,
+    borderColor: AppColors.warningBorder,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
+  },
+  expiredText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: AppColors.warning,
+  },
+  resendButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: AppColors.primaryLight,
+    borderWidth: 1.5,
+    borderColor: AppColors.dominant,
+    marginTop: 4,
+  },
+  resendButtonPressed: {
+    backgroundColor: '#DBEAFE',
+    transform: [{ scale: 0.98 }],
+  },
+  resendButtonDisabled: {
+    opacity: 0.6,
+  },
+  resendButtonText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: AppColors.dominant,
+  },
+  verifyingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginVertical: 12,
+    marginTop: 18,
+    paddingVertical: 12,
   },
   verifyingText: {
     fontSize: 13,
-    color: AppColors.primary,
+    color: AppColors.dominant,
     fontWeight: '600',
   },
   footer: {
@@ -563,9 +814,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     marginTop: 20,
+    marginBottom: 8,
   },
   footerText: {
-    fontSize: 12,
+    fontSize: 11,
     color: AppColors.mutedSlate,
     fontWeight: '500',
   },

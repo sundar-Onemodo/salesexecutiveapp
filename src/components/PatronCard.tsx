@@ -12,7 +12,6 @@ interface PatronCardProps {
 
 export const PatronCard: React.FC<PatronCardProps> = ({
   patron,
-  currency = 'INR',
   onCollect,
 }) => {
   const creditLimitNum = parseFloat(patron.credit_limit) || 0;
@@ -21,6 +20,7 @@ export const PatronCard: React.FC<PatronCardProps> = ({
 
   const usedPercentage =
     creditLimitNum > 0 ? Math.min(100, Math.round((usedCreditNum / creditLimitNum) * 100)) : 0;
+  const isHealthy = usedPercentage < 60;
 
   const formatCurrency = (val: number) => {
     return `₹${val.toLocaleString('en-IN', {
@@ -29,222 +29,311 @@ export const PatronCard: React.FC<PatronCardProps> = ({
     })}`;
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+  };
+
   return (
-    <View style={styles.card}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {patron.name
-              .split(' ')
-              .map((n) => n[0])
-              .join('')
-              .slice(0, 2)
-              .toUpperCase()}
-          </Text>
-        </View>
-        <View style={styles.headerInfo}>
-          <Text style={styles.name}>{patron.name}</Text>
-          <View style={styles.idBadge}>
-            <Text style={styles.idText}>ID: #{patron.id}</Text>
+    <Pressable
+      style={({ pressed }) => [
+        styles.cardContainer,
+        pressed && styles.cardPressed,
+      ]}
+      onPress={() => onCollect(patron)}
+      accessibilityLabel={`Patron ${patron.name}, tap to record collection`}>
+      {/* Left Health Pillar */}
+      <View
+        style={[
+          styles.leftPillar,
+          { backgroundColor: isHealthy ? AppColors.success : AppColors.warning },
+        ]}
+      />
+
+      <View style={styles.cardInner}>
+        {/* Header Row */}
+        <View style={styles.headerRow}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{getInitials(patron.name)}</Text>
+          </View>
+          <View style={styles.titleInfo}>
+            <Text style={styles.clientName}>{patron.name}</Text>
+            <View style={styles.tagRow}>
+              <View style={styles.idTag}>
+                <Ionicons name="card-outline" size={11} color={AppColors.mutedSlate} />
+                <Text style={styles.idTagText}>#{patron.id}</Text>
+              </View>
+              <View
+                style={[
+                  styles.healthBadge,
+                  { backgroundColor: isHealthy ? AppColors.successLight : AppColors.warningLight },
+                ]}>
+                <View
+                  style={[
+                    styles.dotIndicator,
+                    { backgroundColor: isHealthy ? AppColors.success : AppColors.warning },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.healthBadgeText,
+                    { color: isHealthy ? AppColors.success : AppColors.warning },
+                  ]}>
+                  {usedPercentage === 0 ? 'Full Credit' : `${usedPercentage}% Utilized`}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Action Indicator Chevron */}
+          <View style={styles.chevronBox}>
+            <Ionicons name="chevron-forward" size={18} color={AppColors.dominant} />
           </View>
         </View>
-        <Pressable
-          style={({ pressed }) => [styles.collectButton, pressed && styles.collectButtonPressed]}
-          onPress={() => onCollect(patron)}>
-          <Ionicons name="cash-outline" size={16} color={AppColors.white} />
-          <Text style={styles.collectButtonText}>Collect</Text>
-        </Pressable>
+
+        {/* Central Financial Display Panel */}
+        <View style={styles.financialPanel}>
+          <View style={styles.availableSection}>
+            <Text style={styles.availableLabel}>AVAILABLE CREDIT</Text>
+            <Text style={styles.availableValue}>{formatCurrency(availableCreditNum)}</Text>
+          </View>
+
+          <View style={styles.financialDivider} />
+
+          <View style={styles.miniStatsCol}>
+            <View style={styles.miniStatItem}>
+              <Text style={styles.miniStatLabel}>Limit:</Text>
+              <Text style={styles.miniStatValue}>{formatCurrency(creditLimitNum)}</Text>
+            </View>
+            <View style={styles.miniStatItem}>
+              <Text style={styles.miniStatLabel}>Used:</Text>
+              <Text
+                style={[
+                  styles.miniStatValue,
+                  usedCreditNum > 0 && { color: AppColors.warning, fontWeight: '700' },
+                ]}>
+                {formatCurrency(usedCreditNum)}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Dual-Tone Visual Progress Bar */}
+        <View style={styles.gaugeContainer}>
+          <View style={styles.gaugeTrack}>
+            <View
+              style={[
+                styles.gaugeFill,
+                {
+                  width: `${usedPercentage}%`,
+                  backgroundColor: usedPercentage > 75 ? AppColors.warning : AppColors.dominant,
+                },
+              ]}
+            />
+          </View>
+          <View style={styles.gaugeLegendRow}>
+            <Text style={styles.gaugeLegendText}>
+              {usedPercentage}% used • {(100 - usedPercentage).toFixed(0)}% available
+            </Text>
+            <View style={styles.tapToCollectRow}>
+              <Ionicons name="wallet-outline" size={12} color={AppColors.dominant} />
+              <Text style={styles.tapToCollectText}>Tap to collect</Text>
+            </View>
+          </View>
+        </View>
       </View>
-
-      <View style={styles.divider} />
-
-      {/* Credit Summary Grid */}
-      <View style={styles.metricsGrid}>
-        <View style={styles.metricItem}>
-          <Text style={styles.metricLabel}>Available Credit</Text>
-          <Text style={styles.metricValueAvailable}>
-            {formatCurrency(availableCreditNum)}
-          </Text>
-        </View>
-
-        <View style={styles.metricItem}>
-          <Text style={styles.metricLabel}>Credit Limit</Text>
-          <Text style={styles.metricValueNeutral}>{formatCurrency(creditLimitNum)}</Text>
-        </View>
-
-        <View style={styles.metricItem}>
-          <Text style={styles.metricLabel}>Used Credit</Text>
-          <Text style={styles.metricValueUsed}>{formatCurrency(usedCreditNum)}</Text>
-        </View>
-      </View>
-
-      {/* Credit Usage Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressTrack}>
-          <View
-            style={[
-              styles.progressBar,
-              { width: `${usedPercentage}%` },
-              usedPercentage > 80 && styles.progressBarHigh,
-            ]}
-          />
-        </View>
-        <View style={styles.progressLabels}>
-          <Text style={styles.progressText}>{usedPercentage}% utilized</Text>
-          <Text style={styles.progressSubText}>
-            {formatCurrency(availableCreditNum)} remaining
-          </Text>
-        </View>
-      </View>
-    </View>
+    </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
+  cardContainer: {
     backgroundColor: AppColors.card,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: AppColors.border,
-    padding: 16,
     marginBottom: 14,
+    flexDirection: 'row',
+    overflow: 'hidden',
     elevation: 2,
     shadowColor: AppColors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.04,
     shadowRadius: 5,
   },
-  header: {
+  cardPressed: {
+    opacity: 0.94,
+    transform: [{ scale: 0.99 }],
+    borderColor: AppColors.dominant,
+  },
+  leftPillar: {
+    width: 4,
+    height: '100%',
+  },
+  cardInner: {
+    flex: 1,
+    padding: 16,
+  },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  avatar: {
+  avatarCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FBEBEB',
+    backgroundColor: AppColors.primaryLight,
     borderWidth: 1.5,
-    borderColor: AppColors.primaryLight,
+    borderColor: AppColors.primaryBorder,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: AppColors.primaryDark,
+    fontSize: 15,
+    fontWeight: '800',
+    color: AppColors.dominant,
   },
-  headerInfo: {
+  titleInfo: {
     flex: 1,
   },
-  name: {
+  clientName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: AppColors.textPrimary,
-    marginBottom: 3,
+    letterSpacing: -0.2,
   },
-  idBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#F4EEEE',
+  tagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 3,
+  },
+  idTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: AppColors.cardSecondary,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  idTagText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: AppColors.mutedSlate,
+  },
+  healthBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
   },
-  idText: {
+  dotIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  healthBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: AppColors.mutedSlate,
-  },
-  collectButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: AppColors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    elevation: 2,
-    shadowColor: AppColors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-  },
-  collectButtonPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
-  },
-  collectButtonText: {
-    color: AppColors.white,
-    fontSize: 13,
     fontWeight: '700',
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#F0EAEA',
-    marginVertical: 14,
+  chevronBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: AppColors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  metricsGrid: {
+  financialPanel: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginBottom: 12,
+    alignItems: 'center',
+    backgroundColor: AppColors.cardSecondary,
+    borderWidth: 1,
+    borderColor: AppColors.border,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 14,
   },
-  metricItem: {
-    flex: 1,
+  availableSection: {
+    flex: 1.3,
   },
-  metricLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: AppColors.mutedSlate,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  metricValueAvailable: {
-    fontSize: 14,
+  availableLabel: {
+    fontSize: 10,
     fontWeight: '800',
-    color: AppColors.primaryDark,
-  },
-  metricValueNeutral: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: AppColors.textPrimary,
-  },
-  metricValueUsed: {
-    fontSize: 13,
-    fontWeight: '600',
     color: AppColors.mutedSlate,
+    letterSpacing: 0.6,
   },
-  progressContainer: {
+  availableValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: AppColors.dominant,
     marginTop: 2,
   },
-  progressTrack: {
+  financialDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: AppColors.border,
+    marginHorizontal: 10,
+  },
+  miniStatsCol: {
+    flex: 1,
+    gap: 4,
+  },
+  miniStatItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  miniStatLabel: {
+    fontSize: 11,
+    color: AppColors.mutedSlate,
+    fontWeight: '500',
+  },
+  miniStatValue: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: AppColors.textPrimary,
+  },
+  gaugeContainer: {
+    marginTop: 12,
+  },
+  gaugeTrack: {
     height: 6,
-    backgroundColor: '#F2EDED',
+    backgroundColor: AppColors.border,
     borderRadius: 3,
     overflow: 'hidden',
   },
-  progressBar: {
+  gaugeFill: {
     height: '100%',
-    backgroundColor: AppColors.primaryLight,
     borderRadius: 3,
   },
-  progressBarHigh: {
-    backgroundColor: AppColors.primary,
-  },
-  progressLabels: {
+  gaugeLegendRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 4,
+    alignItems: 'center',
+    marginTop: 6,
   },
-  progressText: {
+  gaugeLegendText: {
     fontSize: 11,
-    fontWeight: '600',
     color: AppColors.mutedSlate,
-  },
-  progressSubText: {
-    fontSize: 11,
     fontWeight: '500',
-    color: AppColors.mutedSlate,
+  },
+  tapToCollectRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  tapToCollectText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: AppColors.dominant,
   },
 });

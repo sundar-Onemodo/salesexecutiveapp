@@ -75,6 +75,44 @@ export interface CollectionResponse {
   message?: string;
 }
 
+// 5. Executive Collections List Item
+export interface ExecutiveCollectionItem {
+  collection_id: string;
+  created_at: string;
+  amount: string;
+  transaction_mode: TransactionMode | string;
+  note: string;
+  payment_id: string | null;
+  posted_company_id: string | null;
+  patron: string;
+  posted_company: string | null;
+}
+
+export interface ExecutiveCollectionsResponse {
+  success: boolean;
+  currency: string;
+  collections: ExecutiveCollectionItem[];
+  message?: string;
+}
+
+// 6. Executive Collection Summary & Daily Totals
+export interface DailyTotalItem {
+  collection_date: string;
+  collection_count: string | number;
+  total_amount: string;
+}
+
+export interface ExecutiveCollectionSummaryResponse {
+  success: boolean;
+  currency: string;
+  from_date: string;
+  to_date: string;
+  collection_count: number;
+  total_amount: string;
+  daily_totals: DailyTotalItem[];
+  message?: string;
+}
+
 const defaultHeaders = {
   Accept: 'application/json',
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 OnemodoSalesApp',
@@ -265,6 +303,104 @@ export const ApiService = {
         amount: parseFloat(payload.amount).toFixed(2),
         currency: 'INR',
         request_id: 'local_' + Date.now(),
+      };
+    }
+  },
+
+  /**
+   * 5. Get Executive Collections by date range
+   * GET /apiv3/executivecollections?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD
+   */
+  async getExecutiveCollections(
+    token: string,
+    fromDate: string,
+    toDate: string
+  ): Promise<ExecutiveCollectionsResponse> {
+    const url = `${BASE_URL}executivecollections?from_date=${encodeURIComponent(
+      fromDate
+    )}&to_date=${encodeURIComponent(toDate)}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          ...defaultHeaders,
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (response.ok && data?.success) {
+        return data;
+      }
+
+      return {
+        success: data?.success ?? false,
+        currency: data?.currency || 'INR',
+        collections: data?.collections || [],
+        message: data?.message,
+      };
+    } catch (error: any) {
+      console.warn('API getExecutiveCollections error:', error);
+      return {
+        success: false,
+        currency: 'INR',
+        collections: [],
+        message: 'Network error fetching collections.',
+      };
+    }
+  },
+
+  /**
+   * 6. Get Executive Collection Summary & Daily Totals
+   * GET /apiv3/executivecollectionsummary?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD
+   */
+  async getExecutiveCollectionSummary(
+    token: string,
+    fromDate: string,
+    toDate: string
+  ): Promise<ExecutiveCollectionSummaryResponse> {
+    const url = `${BASE_URL}executivecollectionsummary?from_date=${encodeURIComponent(
+      fromDate
+    )}&to_date=${encodeURIComponent(toDate)}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          ...defaultHeaders,
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (response.ok && data?.success) {
+        return data;
+      }
+
+      return {
+        success: data?.success ?? false,
+        currency: data?.currency || 'INR',
+        from_date: fromDate,
+        to_date: toDate,
+        collection_count: data?.collection_count || 0,
+        total_amount: data?.total_amount || '0.00',
+        daily_totals: data?.daily_totals || [],
+        message: data?.message,
+      };
+    } catch (error: any) {
+      console.warn('API getExecutiveCollectionSummary error:', error);
+      return {
+        success: false,
+        currency: 'INR',
+        from_date: fromDate,
+        to_date: toDate,
+        collection_count: 0,
+        total_amount: '0.00',
+        daily_totals: [],
+        message: 'Network error fetching collection summary.',
       };
     }
   },

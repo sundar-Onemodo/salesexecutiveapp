@@ -29,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
           style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
           onPress={onOpenMenu}
           accessibilityLabel="Open side menu">
-          <Ionicons name="menu" size={24} color={AppColors.primaryDark} />
+          <Ionicons name="menu" size={24} color={AppColors.surface} />
         </Pressable>
 
         {/* Title */}
@@ -52,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
             <Ionicons
               name={isRefreshing ? 'sync' : 'refresh'}
               size={20}
-              color={AppColors.primary}
+              color={AppColors.dominant}
             />
           </Pressable>
         ) : (
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     shadowColor: AppColors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 4,
   },
   contentRow: {
@@ -84,15 +84,15 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 40,
     height: 40,
-    borderRadius: 10,
-    backgroundColor: '#FAF5F5',
+    borderRadius: 12,
+    backgroundColor: AppColors.primaryTint,
     borderWidth: 1,
-    borderColor: '#EFE6E6',
+    borderColor: AppColors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconButtonPressed: {
-    backgroundColor: '#F5E8E8',
+    backgroundColor: AppColors.iceBlue,
     transform: [{ scale: 0.96 }],
   },
   titleContainer: {
@@ -103,13 +103,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '800',
-    color: AppColors.primaryDark,
+    color: AppColors.surface,
     letterSpacing: 0.2,
   },
   subtitle: {
     fontSize: 11,
-    color: AppColors.mutedSlate,
     fontWeight: '600',
+    color: AppColors.mutedSlate,
     marginTop: 1,
   },
 });

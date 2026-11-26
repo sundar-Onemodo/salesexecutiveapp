@@ -111,7 +111,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({
 
           {/* Navigation Links */}
           <View style={styles.navSection}>
-            <Text style={styles.sectionTitle}>MENU</Text>
+            <Text style={styles.sectionTitle}>NAVIGATION</Text>
 
             <Pressable
               style={[
@@ -124,7 +124,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({
                 size={20}
                 color={
                   activeRoute === 'dashboard'
-                    ? AppColors.primary
+                    ? AppColors.dominant
                     : AppColors.mutedSlate
                 }
               />
@@ -151,7 +151,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({
                 size={20}
                 color={
                   activeRoute === 'profile'
-                    ? AppColors.primary
+                    ? AppColors.dominant
                     : AppColors.mutedSlate
                 }
               />
@@ -162,12 +162,15 @@ export const SideMenu: React.FC<SideMenuProps> = ({
                 ]}>
                 Executive Profile
               </Text>
+              {activeRoute === 'profile' ? (
+                <View style={styles.activeDot} />
+              ) : null}
             </Pressable>
 
             <View style={styles.divider} />
 
             <View style={styles.infoBox}>
-              <Ionicons name="shield-checkmark" size={16} color={AppColors.primary} />
+              <Ionicons name="shield-checkmark" size={16} color={AppColors.surface} />
               <Text style={styles.infoBoxText}>
                 Active Session • Verified API v3
               </Text>
@@ -184,7 +187,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({
                 pressed && styles.logoutButtonPressed,
               ]}
               onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={20} color={AppColors.primary} />
+              <Ionicons name="log-out-outline" size={20} color={AppColors.error} />
               <Text style={styles.logoutText}>Log Out</Text>
             </Pressable>
 
@@ -226,7 +229,7 @@ const styles = StyleSheet.create({
   },
   header: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F2EDED',
+    borderBottomColor: AppColors.borderMuted,
     paddingBottom: 16,
   },
   headerBrand: {
@@ -239,14 +242,14 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: AppColors.primary,
+    backgroundColor: AppColors.dominant,
     justifyContent: 'center',
     alignItems: 'center',
   },
   appName: {
     fontSize: 16,
     fontWeight: '900',
-    color: AppColors.primaryDark,
+    color: AppColors.surface,
     letterSpacing: 1,
   },
   appSub: {
@@ -257,9 +260,9 @@ const styles = StyleSheet.create({
   executiveCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: AppColors.cardSecondary,
+    backgroundColor: AppColors.primaryTint,
     borderWidth: 1,
-    borderColor: AppColors.primaryLight,
+    borderColor: AppColors.border,
     padding: 12,
     borderRadius: 12,
     gap: 10,
@@ -268,16 +271,16 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FBEBEB',
+    backgroundColor: AppColors.iceBlue,
     borderWidth: 1,
-    borderColor: AppColors.primaryLight,
+    borderColor: AppColors.dominant,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
     fontSize: 14,
     fontWeight: '800',
-    color: AppColors.primaryDark,
+    color: AppColors.dominant,
   },
   executiveDetails: {
     flex: 1,
@@ -287,15 +290,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: AppColors.textPrimary,
   },
-  groupText: {
-    fontSize: 11,
-    color: AppColors.mutedSlate,
-    fontWeight: '500',
-  },
   mobileText: {
-    fontSize: 11,
-    color: AppColors.primaryDark,
+    fontSize: 12,
+    color: AppColors.dominant,
     fontWeight: '600',
+    marginTop: 2,
   },
   navSection: {
     flex: 1,
@@ -306,89 +305,87 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: AppColors.mutedSlate,
-    letterSpacing: 0.8,
-    marginBottom: 6,
+    letterSpacing: 1,
+    marginBottom: 8,
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
     paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     borderRadius: 10,
+    gap: 12,
   },
   navItemActive: {
-    backgroundColor: '#FDECEC',
+    backgroundColor: AppColors.primaryTint,
   },
   navText: {
     fontSize: 14,
     fontWeight: '600',
-    color: AppColors.textPrimary,
+    color: AppColors.mutedSlate,
     flex: 1,
   },
   navTextActive: {
-    color: AppColors.primary,
+    color: AppColors.dominant,
     fontWeight: '700',
   },
   activeDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: AppColors.primary,
+    backgroundColor: AppColors.dominant,
   },
   divider: {
     height: 1,
-    backgroundColor: '#F0EAEA',
+    backgroundColor: AppColors.borderMuted,
     marginVertical: 12,
   },
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FAF5F5',
+    backgroundColor: AppColors.tealLight,
     padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#F2E6E6',
+    borderRadius: 10,
   },
   infoBoxText: {
     fontSize: 11,
-    color: AppColors.mutedSlate,
-    fontWeight: '500',
+    color: AppColors.surface,
+    fontWeight: '600',
+    flex: 1,
   },
   bottomSection: {
-    paddingTop: 10,
+    paddingTop: 12,
   },
   bottomDivider: {
     height: 1,
-    backgroundColor: AppColors.border,
-    marginBottom: 14,
+    backgroundColor: AppColors.borderMuted,
+    marginBottom: 12,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    backgroundColor: '#FFF2F2',
-    borderWidth: 1.5,
-    borderColor: AppColors.primaryLight,
-    paddingVertical: 13,
+    gap: 8,
+    backgroundColor: AppColors.errorLight,
+    borderWidth: 1,
+    borderColor: '#FED7D7',
+    paddingVertical: 12,
     borderRadius: 12,
-    elevation: 1,
+    marginBottom: 12,
   },
   logoutButtonPressed: {
-    backgroundColor: '#FCE6E6',
+    backgroundColor: '#FDE8E8',
     transform: [{ scale: 0.98 }],
   },
   logoutText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
-    color: AppColors.primary,
+    color: AppColors.error,
   },
   versionText: {
     fontSize: 11,
     color: AppColors.mutedSlate,
     textAlign: 'center',
-    marginTop: 10,
   },
 });

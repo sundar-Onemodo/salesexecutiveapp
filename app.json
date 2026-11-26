@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "Onemodosalesexecutive",
-    "slug": "Onemodosalesexecutive",
+    "name": "OnemodoPatrons",
+    "slug": "onemodopatrons",
+    "owner": "sayee",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "onemodosalesexecutive",
+    "scheme": "onemodopatrons",
     "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon"
@@ -18,7 +19,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.shreedhar_t.Onemodosalesexecutive"
+      "package": "com.onemodo.patrons"
     },
     "web": {
       "output": "static",

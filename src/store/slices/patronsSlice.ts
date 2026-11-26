@@ -3,6 +3,9 @@ import {
   ApiService,
   CollectionPayload,
   CollectionResponse,
+  ExecutiveCollectionItem,
+  ExecutiveCollectionSummaryResponse,
+  ExecutiveCollectionsResponse,
   Patron,
   PatronsResponse,
 } from '@/services/api';
@@ -24,6 +27,15 @@ export interface PatronsState {
   error: string | null;
   lastCollectionSuccess: CollectionResponse | null;
   recentCollections: RecordedCollection[];
+
+  // Real Server Collection APIs
+  executiveCollections: ExecutiveCollectionItem[];
+  isLoadingCollections: boolean;
+  collectionsError: string | null;
+
+  collectionSummary: ExecutiveCollectionSummaryResponse | null;
+  isLoadingSummary: boolean;
+  summaryError: string | null;
 }
 
 const initialState: PatronsState = {
@@ -34,6 +46,14 @@ const initialState: PatronsState = {
   error: null,
   lastCollectionSuccess: null,
   recentCollections: [],
+
+  executiveCollections: [],
+  isLoadingCollections: false,
+  collectionsError: null,
+
+  collectionSummary: null,
+  isLoadingSummary: false,
+  summaryError: null,
 };
 
 export const fetchPatronsThunk = createAsyncThunk<
@@ -103,12 +123,64 @@ export const loadCollectionHistoryThunk = createAsyncThunk(
   }
 );
 
+// 5. Thunk: Fetch Executive Collections List (GET /executivecollections?from_date=&to_date=)
+export const fetchExecutiveCollectionsThunk = createAsyncThunk<
+  ExecutiveCollectionsResponse,
+  { fromDate: string; toDate: string },
+  { state: RootState; rejectValue: string }
+>(
+  'patrons/fetchExecutiveCollections',
+  async ({ fromDate, toDate }, { getState, rejectWithValue }) => {
+    const { auth } = getState();
+    if (!auth.token) {
+      return rejectWithValue('No auth token available');
+    }
+
+    try {
+      const res = await ApiService.getExecutiveCollections(auth.token, fromDate, toDate);
+      if (!res.success) {
+        return rejectWithValue(res.message || 'Failed to fetch executive collections');
+      }
+      return res;
+    } catch (err: any) {
+      return rejectWithValue(err.message || 'Network error fetching collections');
+    }
+  }
+);
+
+// 6. Thunk: Fetch Executive Collection Summary Chart Data (GET /executivecollectionsummary?from_date=&to_date=)
+export const fetchCollectionSummaryThunk = createAsyncThunk<
+  ExecutiveCollectionSummaryResponse,
+  { fromDate: string; toDate: string },
+  { state: RootState; rejectValue: string }
+>(
+  'patrons/fetchCollectionSummary',
+  async ({ fromDate, toDate }, { getState, rejectWithValue }) => {
+    const { auth } = getState();
+    if (!auth.token) {
+      return rejectWithValue('No auth token available');
+    }
+
+    try {
+      const res = await ApiService.getExecutiveCollectionSummary(auth.token, fromDate, toDate);
+      if (!res.success) {
+        return rejectWithValue(res.message || 'Failed to fetch collection summary');
+      }
+      return res;
+    } catch (err: any) {
+      return rejectWithValue(err.message || 'Network error fetching summary');
+    }
+  }
+);
+
 export const patronsSlice = createSlice({
   name: 'patrons',
   initialState,
   reducers: {
     clearPatronsError: (state) => {
       state.error = null;
+      state.collectionsError = null;
+      state.summaryError = null;
     },
     clearLastCollection: (state) => {
       state.lastCollectionSuccess = null;
@@ -140,7 +212,6 @@ export const patronsSlice = createSlice({
       state.isSubmittingCollection = false;
       state.lastCollectionSuccess = action.payload;
       state.recentCollections = [action.payload, ...state.recentCollections];
-      // update storage
       StorageService.saveCollections(state.recentCollections);
 
       // Optimistically update patron's used credit and available credit if found
@@ -151,7 +222,6 @@ export const patronsSlice = createSlice({
         const currentUsed = parseFloat(patron.used_credit || '0');
         const limit = parseFloat(patron.credit_limit || '0');
 
-        // Payment collection decreases used credit and increases available credit
         const newUsed = Math.max(0, currentUsed - addedAmount);
         const newAvailable = Math.min(limit, limit - newUsed);
 
@@ -172,6 +242,34 @@ export const patronsSlice = createSlice({
       if (action.payload) {
         state.recentCollections = action.payload;
       }
+    });
+
+    // Executive Collections List
+    builder.addCase(fetchExecutiveCollectionsThunk.pending, (state) => {
+      state.isLoadingCollections = true;
+      state.collectionsError = null;
+    });
+    builder.addCase(fetchExecutiveCollectionsThunk.fulfilled, (state, action) => {
+      state.isLoadingCollections = false;
+      state.executiveCollections = action.payload.collections || [];
+    });
+    builder.addCase(fetchExecutiveCollectionsThunk.rejected, (state, action) => {
+      state.isLoadingCollections = false;
+      state.collectionsError = action.payload || 'Failed to load collections';
+    });
+
+    // Executive Collection Summary (Chart Data)
+    builder.addCase(fetchCollectionSummaryThunk.pending, (state) => {
+      state.isLoadingSummary = true;
+      state.summaryError = null;
+    });
+    builder.addCase(fetchCollectionSummaryThunk.fulfilled, (state, action) => {
+      state.isLoadingSummary = false;
+      state.collectionSummary = action.payload;
+    });
+    builder.addCase(fetchCollectionSummaryThunk.rejected, (state, action) => {
+      state.isLoadingSummary = false;
+      state.summaryError = action.payload || 'Failed to load summary';
     });
   },
 });

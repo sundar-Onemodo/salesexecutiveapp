@@ -123,7 +123,7 @@ export const OtpInput: React.FC<OtpInputProps> = ({
               editable={!disabled}
               selectTextOnFocus
               textAlign="center"
-              cursorColor={AppColors.primary}
+              cursorColor={AppColors.dominant}
             />
           );
         })}
@@ -156,16 +156,16 @@ const styles = StyleSheet.create({
     backgroundColor: AppColors.card,
     fontSize: 20,
     fontWeight: '700',
-    color: AppColors.primaryDark,
+    color: AppColors.surface,
     elevation: 2,
     shadowColor: AppColors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 3,
   },
   boxFilled: {
-    borderColor: AppColors.primary,
-    backgroundColor: '#FFF8F8',
+    borderColor: AppColors.dominant,
+    backgroundColor: '#F0F5FC',
   },
   boxError: {
     borderColor: AppColors.error,
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   errorText: {
-    marginTop: 10,
+    marginTop: 8,
     color: AppColors.error,
     fontSize: 13,
     fontWeight: '600',

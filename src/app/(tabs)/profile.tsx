@@ -92,7 +92,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statCol}>
-            <Text style={styles.statNum}>Active</Text>
+            <Text style={styles.statNumActive}>Active</Text>
             <Text style={styles.statLabel}>Status</Text>
           </View>
         </View>
@@ -103,7 +103,7 @@ export default function ProfileScreen() {
 
           <View style={styles.infoRow}>
             <View style={styles.infoIconBox}>
-              <Ionicons name="person-outline" size={18} color={AppColors.primary} />
+              <Ionicons name="person-outline" size={18} color={AppColors.dominant} />
             </View>
             <View style={styles.infoTexts}>
               <Text style={styles.infoLabel}>Role</Text>
@@ -115,7 +115,7 @@ export default function ProfileScreen() {
 
           <View style={styles.infoRow}>
             <View style={styles.infoIconBox}>
-              <Ionicons name="call-outline" size={18} color={AppColors.primary} />
+              <Ionicons name="call-outline" size={18} color={AppColors.dominant} />
             </View>
             <View style={styles.infoTexts}>
               <Text style={styles.infoLabel}>Registered Mobile</Text>
@@ -129,7 +129,7 @@ export default function ProfileScreen() {
 
           <View style={styles.infoRow}>
             <View style={styles.infoIconBox}>
-              <Ionicons name="shield-checkmark-outline" size={18} color={AppColors.primary} />
+              <Ionicons name="shield-checkmark-outline" size={18} color={AppColors.surface} />
             </View>
             <View style={styles.infoTexts}>
               <Text style={styles.infoLabel}>Account Status</Text>
@@ -144,7 +144,7 @@ export default function ProfileScreen() {
 
           <View style={styles.infoRow}>
             <View style={styles.infoIconBox}>
-              <Ionicons name="sunny-outline" size={18} color={AppColors.primaryDark} />
+              <Ionicons name="sunny-outline" size={18} color={AppColors.surface} />
             </View>
             <View style={styles.infoTexts}>
               <Text style={styles.infoLabel}>Theme Appearance</Text>
@@ -156,7 +156,7 @@ export default function ProfileScreen() {
 
           <View style={styles.infoRow}>
             <View style={styles.infoIconBox}>
-              <Ionicons name="information-circle-outline" size={18} color={AppColors.primaryDark} />
+              <Ionicons name="information-circle-outline" size={18} color={AppColors.dominant} />
             </View>
             <View style={styles.infoTexts}>
               <Text style={styles.infoLabel}>Application Version</Text>
@@ -208,9 +208,9 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#FDECEC',
+    backgroundColor: AppColors.iceBlue,
     borderWidth: 2,
-    borderColor: AppColors.primaryLight,
+    borderColor: AppColors.dominant,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   avatarLargeText: {
     fontSize: 24,
     fontWeight: '900',
-    color: AppColors.primaryDark,
+    color: AppColors.dominant,
   },
   verifiedBadge: {
     position: 'absolute',
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: AppColors.primary,
+    backgroundColor: AppColors.surface,
     borderWidth: 2,
     borderColor: AppColors.white,
     justifyContent: 'center',
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   profileTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: AppColors.primaryDark,
+    color: AppColors.surface,
   },
   profileSubtitle: {
     fontSize: 14,
@@ -249,11 +249,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: AppColors.cardSecondary,
+    backgroundColor: AppColors.card,
     borderWidth: 1,
-    borderColor: AppColors.primaryLight,
+    borderColor: AppColors.border,
     borderRadius: 16,
     paddingVertical: 14,
+    paddingHorizontal: 12,
     marginBottom: 16,
   },
   statCol: {
@@ -263,19 +264,23 @@ const styles = StyleSheet.create({
   statNum: {
     fontSize: 18,
     fontWeight: '800',
-    color: AppColors.primaryDark,
+    color: AppColors.dominant,
+  },
+  statNumActive: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: AppColors.surface,
   },
   statLabel: {
     fontSize: 11,
     color: AppColors.mutedSlate,
-    fontWeight: '600',
+    fontWeight: '500',
     marginTop: 2,
-    textTransform: 'uppercase',
   },
   statDivider: {
     width: 1,
-    height: 26,
-    backgroundColor: AppColors.primaryLight,
+    height: 28,
+    backgroundColor: AppColors.border,
   },
   cardSection: {
     backgroundColor: AppColors.card,
@@ -286,7 +291,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     elevation: 2,
     shadowColor: AppColors.shadow,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
   },
@@ -295,7 +300,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: AppColors.mutedSlate,
     letterSpacing: 0.8,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   infoRow: {
     flexDirection: 'row',
@@ -307,9 +312,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#FAF5F5',
+    backgroundColor: AppColors.primaryTint,
     borderWidth: 1,
-    borderColor: '#F0EAEA',
+    borderColor: AppColors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -318,9 +323,8 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 11,
-    fontWeight: '600',
     color: AppColors.mutedSlate,
-    textTransform: 'uppercase',
+    fontWeight: '500',
   },
   infoValue: {
     fontSize: 14,
@@ -330,7 +334,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     height: 1,
-    backgroundColor: '#F5EFEF',
+    backgroundColor: AppColors.borderMuted,
     marginVertical: 10,
   },
   logoutButton: {
@@ -338,14 +342,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: AppColors.primary,
-    height: 52,
+    backgroundColor: AppColors.error,
+    paddingVertical: 14,
     borderRadius: 14,
-    marginTop: 8,
+    marginTop: 6,
     elevation: 3,
-    shadowColor: AppColors.primary,
+    shadowColor: AppColors.error,
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 5,
   },
   logoutButtonPressed: {
@@ -354,13 +358,14 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: AppColors.white,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   footerNote: {
-    fontSize: 12,
+    fontSize: 11,
     color: AppColors.mutedSlate,
     textAlign: 'center',
-    marginTop: 18,
+    marginTop: 16,
+    marginBottom: 8,
   },
 });

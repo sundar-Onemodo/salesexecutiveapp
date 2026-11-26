@@ -5,18 +5,16 @@
     "owner": "sayee",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/app_icon.png",
     "scheme": "onemodopatrons",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/app_icon.png"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#FAF8F8",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#9C040B",
+        "foregroundImage": "./assets/images/app_icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.onemodo.patrons"
@@ -30,15 +28,27 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FAF8F8",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#9C040B",
+          "image": "./assets/images/transparent-splash.png",
+          "imageWidth": 1
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "updates": {
+      "url": "https://u.expo.dev/cd6fd10b-64d6-4356-81a4-6deda8923429"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cd6fd10b-64d6-4356-81a4-6deda8923429"
+      }
     }
   }
 }

@@ -1,62 +1,62 @@
-import React from 'react';
+import { AppColors } from "@/constants/colors";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { logoutThunk } from "@/store/slices/authSlice";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
+import React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  Pressable,
   Alert,
+  Modal,
   Platform,
+  Pressable,
+  StyleSheet,
+  Text,
   TouchableWithoutFeedback,
-} from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AppColors } from '@/constants/colors';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { logoutThunk } from '@/store/slices/authSlice';
-import { router } from 'expo-router';
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface SideMenuProps {
   visible: boolean;
   onClose: () => void;
-  activeRoute?: 'dashboard' | 'profile';
+  activeRoute?: "dashboard" | "profile";
 }
 
 export const SideMenu: React.FC<SideMenuProps> = ({
   visible,
   onClose,
-  activeRoute = 'dashboard',
+  activeRoute = "dashboard",
 }) => {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const { mobile } = useAppSelector((state) => state.auth);
 
   const handleLogout = () => {
-    if (Platform.OS === 'web') {
-      const confirmed = window.confirm('Are you sure you want to log out?');
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("Are you sure you want to log out?");
       if (confirmed) {
         dispatch(logoutThunk());
         onClose();
-        router.replace('/login');
+        router.replace("/login");
       }
       return;
     }
 
     Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out from Onemodo Sales Executive?',
+      "Log Out",
+      "Are you sure you want to log out from Onemodo Sales Executive?",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Log Out',
-          style: 'destructive',
+          text: "Log Out",
+          style: "destructive",
           onPress: () => {
             dispatch(logoutThunk());
             onClose();
-            router.replace('/login');
+            router.replace("/login");
           },
         },
-      ]
+      ],
     );
   };
 
@@ -70,7 +70,8 @@ export const SideMenu: React.FC<SideMenuProps> = ({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}>
+      onRequestClose={onClose}
+    >
       <View style={styles.container}>
         <TouchableWithoutFeedback onPress={onClose}>
           <View style={styles.backdrop} />
@@ -83,7 +84,8 @@ export const SideMenu: React.FC<SideMenuProps> = ({
               paddingTop: Math.max(insets.top, 24),
               paddingBottom: Math.max(insets.bottom, 20),
             },
-          ]}>
+          ]}
+        >
           {/* Executive Profile Header */}
           <View style={styles.header}>
             <View style={styles.headerBrand}>
@@ -116,14 +118,15 @@ export const SideMenu: React.FC<SideMenuProps> = ({
             <Pressable
               style={[
                 styles.navItem,
-                activeRoute === 'dashboard' && styles.navItemActive,
+                activeRoute === "dashboard" && styles.navItemActive,
               ]}
-              onPress={() => navigateTo('/(tabs)')}>
+              onPress={() => navigateTo("/(tabs)")}
+            >
               <Ionicons
                 name="grid-outline"
                 size={20}
                 color={
-                  activeRoute === 'dashboard'
+                  activeRoute === "dashboard"
                     ? AppColors.dominant
                     : AppColors.mutedSlate
                 }
@@ -131,11 +134,12 @@ export const SideMenu: React.FC<SideMenuProps> = ({
               <Text
                 style={[
                   styles.navText,
-                  activeRoute === 'dashboard' && styles.navTextActive,
-                ]}>
+                  activeRoute === "dashboard" && styles.navTextActive,
+                ]}
+              >
                 Dashboard
               </Text>
-              {activeRoute === 'dashboard' ? (
+              {activeRoute === "dashboard" ? (
                 <View style={styles.activeDot} />
               ) : null}
             </Pressable>
@@ -143,14 +147,15 @@ export const SideMenu: React.FC<SideMenuProps> = ({
             <Pressable
               style={[
                 styles.navItem,
-                activeRoute === 'profile' && styles.navItemActive,
+                activeRoute === "profile" && styles.navItemActive,
               ]}
-              onPress={() => navigateTo('/(tabs)/profile')}>
+              onPress={() => navigateTo("/(tabs)/profile")}
+            >
               <Ionicons
                 name="person-circle-outline"
                 size={20}
                 color={
-                  activeRoute === 'profile'
+                  activeRoute === "profile"
                     ? AppColors.dominant
                     : AppColors.mutedSlate
                 }
@@ -158,11 +163,12 @@ export const SideMenu: React.FC<SideMenuProps> = ({
               <Text
                 style={[
                   styles.navText,
-                  activeRoute === 'profile' && styles.navTextActive,
-                ]}>
+                  activeRoute === "profile" && styles.navTextActive,
+                ]}
+              >
                 Executive Profile
               </Text>
-              {activeRoute === 'profile' ? (
+              {activeRoute === "profile" ? (
                 <View style={styles.activeDot} />
               ) : null}
             </Pressable>
@@ -170,10 +176,12 @@ export const SideMenu: React.FC<SideMenuProps> = ({
             <View style={styles.divider} />
 
             <View style={styles.infoBox}>
-              <Ionicons name="shield-checkmark" size={16} color={AppColors.surface} />
-              <Text style={styles.infoBoxText}>
-                Active Session • Verified API v3
-              </Text>
+              <Ionicons
+                name="shield-checkmark"
+                size={16}
+                color={AppColors.surface}
+              />
+              <Text style={styles.infoBoxText}>Active Session • Verified</Text>
             </View>
           </View>
 
@@ -186,12 +194,19 @@ export const SideMenu: React.FC<SideMenuProps> = ({
                 styles.logoutButton,
                 pressed && styles.logoutButtonPressed,
               ]}
-              onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={20} color={AppColors.error} />
+              onPress={handleLogout}
+            >
+              <Ionicons
+                name="log-out-outline"
+                size={20}
+                color={AppColors.error}
+              />
               <Text style={styles.logoutText}>Log Out</Text>
             </Pressable>
 
-            <Text style={styles.versionText}>Onemodo Mobile v1.0.0 (Light)</Text>
+            <Text style={styles.versionText}>
+              Onemodo Mobile v1.0.0 (Light)
+            </Text>
           </View>
         </View>
       </View>
@@ -202,25 +217,25 @@ export const SideMenu: React.FC<SideMenuProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   backdrop: {
     flex: 1,
     backgroundColor: AppColors.overlay,
   },
   drawer: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     bottom: 0,
     left: 0,
-    width: '78%',
+    width: "78%",
     maxWidth: 320,
     backgroundColor: AppColors.card,
     borderRightWidth: 1,
     borderRightColor: AppColors.border,
     paddingHorizontal: 20,
-    flexDirection: 'column',
-    justifyContent: 'space-between',
+    flexDirection: "column",
+    justifyContent: "space-between",
     shadowColor: AppColors.shadow,
     shadowOffset: { width: 4, height: 0 },
     shadowOpacity: 0.15,
@@ -233,8 +248,8 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   headerBrand: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
     marginBottom: 16,
   },
@@ -243,23 +258,23 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 10,
     backgroundColor: AppColors.dominant,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   appName: {
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: "900",
     color: AppColors.surface,
     letterSpacing: 1,
   },
   appSub: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
     color: AppColors.mutedSlate,
   },
   executiveCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: AppColors.primaryTint,
     borderWidth: 1,
     borderColor: AppColors.border,
@@ -274,12 +289,12 @@ const styles = StyleSheet.create({
     backgroundColor: AppColors.iceBlue,
     borderWidth: 1,
     borderColor: AppColors.dominant,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   avatarText: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: "800",
     color: AppColors.dominant,
   },
   executiveDetails: {
@@ -287,13 +302,13 @@ const styles = StyleSheet.create({
   },
   executiveId: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: AppColors.textPrimary,
   },
   mobileText: {
     fontSize: 12,
     color: AppColors.dominant,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 2,
   },
   navSection: {
@@ -303,14 +318,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
     color: AppColors.mutedSlate,
     letterSpacing: 1,
     marginBottom: 8,
   },
   navItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderRadius: 10,
@@ -321,13 +336,13 @@ const styles = StyleSheet.create({
   },
   navText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: AppColors.mutedSlate,
     flex: 1,
   },
   navTextActive: {
     color: AppColors.dominant,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   activeDot: {
     width: 6,
@@ -341,8 +356,8 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   infoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     backgroundColor: AppColors.tealLight,
     padding: 10,
@@ -351,7 +366,7 @@ const styles = StyleSheet.create({
   infoBoxText: {
     fontSize: 11,
     color: AppColors.surface,
-    fontWeight: '600',
+    fontWeight: "600",
     flex: 1,
   },
   bottomSection: {
@@ -363,29 +378,29 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     backgroundColor: AppColors.errorLight,
     borderWidth: 1,
-    borderColor: '#FED7D7',
+    borderColor: "#FED7D7",
     paddingVertical: 12,
     borderRadius: 12,
     marginBottom: 12,
   },
   logoutButtonPressed: {
-    backgroundColor: '#FDE8E8',
+    backgroundColor: "#FDE8E8",
     transform: [{ scale: 0.98 }],
   },
   logoutText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: AppColors.error,
   },
   versionText: {
     fontSize: 11,
     color: AppColors.mutedSlate,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

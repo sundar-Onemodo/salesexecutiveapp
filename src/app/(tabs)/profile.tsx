@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
+import * as Updates from 'expo-updates';
 import { AppColors } from '@/constants/colors';
 import { Header } from '@/components/Header';
 import { SideMenu } from '@/components/SideMenu';
@@ -22,6 +23,44 @@ export default function ProfileScreen() {
   const { patrons, recentCollections } = useAppSelector((state) => state.patrons);
 
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+
+  const handleCheckUpdate = async () => {
+    if (__DEV__) {
+      Alert.alert(
+        'Development Mode',
+        'OTA updates are only active in preview or production standalone builds.'
+      );
+      return;
+    }
+
+    setIsCheckingUpdate(true);
+    try {
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        await Updates.fetchUpdateAsync();
+        Alert.alert(
+          'Update Downloaded',
+          'A new update is ready. Restart the app now to apply changes?',
+          [
+            { text: 'Later', style: 'cancel' },
+            {
+              text: 'Restart',
+              onPress: async () => {
+                await Updates.reloadAsync();
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Up to Date', 'You are on the latest version of Onemodo Patrons.');
+      }
+    } catch (err: any) {
+      Alert.alert('Update Check', err?.message || 'Unable to check for updates right now.');
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
 
   const handleLogout = () => {
     if (Platform.OS === 'web') {
@@ -163,6 +202,28 @@ export default function ProfileScreen() {
               <Text style={styles.infoValue}>v1.0.0</Text>
             </View>
           </View>
+
+          <View style={styles.rowDivider} />
+
+          {/* EAS Update Check */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.infoRow,
+              pressed && styles.infoRowPressed,
+            ]}
+            onPress={handleCheckUpdate}
+            disabled={isCheckingUpdate}>
+            <View style={styles.infoIconBox}>
+              <Ionicons name="cloud-download-outline" size={18} color={AppColors.dominant} />
+            </View>
+            <View style={styles.infoTexts}>
+              <Text style={styles.infoLabel}>EAS Update</Text>
+              <Text style={styles.infoValue}>
+                {isCheckingUpdate ? 'Checking for updates...' : 'Check for Updates'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={AppColors.mutedSlate} />
+          </Pressable>
         </View>
 
         {/* Prominent Logout Button */}
@@ -307,6 +368,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingVertical: 4,
+  },
+  infoRowPressed: {
+    opacity: 0.7,
   },
   infoIconBox: {
     width: 36,

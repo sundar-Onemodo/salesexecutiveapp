@@ -1,29 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import { OtpInput } from "@/components/OtpInput";
+import { AppColors } from "@/constants/colors";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  Pressable,
+  clearError,
+  requestOtpThunk,
+  resetOtpState,
+  verifyOtpThunk,
+} from "@/store/slices/authSlice";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
   TouchableWithoutFeedback,
-  Keyboard,
-} from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { AppColors } from '@/constants/colors';
-import { OtpInput } from '@/components/OtpInput';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {
-  requestOtpThunk,
-  verifyOtpThunk,
-  resetOtpState,
-  clearError,
-} from '@/store/slices/authSlice';
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const OTP_EXPIRY_SECONDS = 600; // 10 minutes
 
@@ -39,17 +39,19 @@ export default function LoginScreen() {
     isAuthenticated,
   } = useAppSelector((state) => state.auth);
 
-  const [mobileNumber, setMobileNumber] = useState('');
+  const [mobileNumber, setMobileNumber] = useState("");
   const [mobileError, setMobileError] = useState<string | null>(null);
-  const [enteredOtp, setEnteredOtp] = useState('');
+  const [enteredOtp, setEnteredOtp] = useState("");
   const [timeLeft, setTimeLeft] = useState(OTP_EXPIRY_SECONDS);
   const [timerKey, setTimerKey] = useState(0);
-  const [resendSuccessMessage, setResendSuccessMessage] = useState<string | null>(null);
+  const [resendSuccessMessage, setResendSuccessMessage] = useState<
+    string | null
+  >(null);
 
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/(tabs)' as any);
+      router.replace("/(tabs)" as any);
     }
   }, [isAuthenticated]);
 
@@ -75,17 +77,17 @@ export default function LoginScreen() {
   const formatTimer = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   const validateMobile = (num: string): boolean => {
-    const clean = num.replace(/\D/g, '');
+    const clean = num.replace(/\D/g, "");
     if (!clean) {
-      setMobileError('Please enter your mobile number');
+      setMobileError("Please enter your mobile number");
       return false;
     }
     if (clean.length !== 10) {
-      setMobileError('Please enter a valid 10-digit mobile number');
+      setMobileError("Please enter a valid 10-digit mobile number");
       return false;
     }
     setMobileError(null);
@@ -100,7 +102,7 @@ export default function LoginScreen() {
       return;
     }
 
-    const clean = mobileNumber.replace(/\D/g, '');
+    const clean = mobileNumber.replace(/\D/g, "");
     const result = await dispatch(requestOtpThunk(clean));
     if (requestOtpThunk.fulfilled.match(result)) {
       setTimeLeft(OTP_EXPIRY_SECONDS);
@@ -111,37 +113,38 @@ export default function LoginScreen() {
   const handleResendOtp = async () => {
     Keyboard.dismiss();
     dispatch(clearError());
-    setEnteredOtp('');
-    const clean = mobileNumber.replace(/\D/g, '');
+    setEnteredOtp("");
+    const clean = mobileNumber.replace(/\D/g, "");
     const result = await dispatch(requestOtpThunk(clean));
     if (requestOtpThunk.fulfilled.match(result)) {
       setTimeLeft(OTP_EXPIRY_SECONDS);
       setTimerKey((k) => k + 1);
-      setResendSuccessMessage('New OTP has been sent to your mobile number.');
+      setResendSuccessMessage("New OTP has been sent to your mobile number.");
     }
   };
 
   const handleVerifyOtp = async (otp: string) => {
     Keyboard.dismiss();
     dispatch(clearError());
-    const clean = mobileNumber.replace(/\D/g, '');
+    const clean = mobileNumber.replace(/\D/g, "");
     const result = await dispatch(verifyOtpThunk({ mobile: clean, otp }));
     if (verifyOtpThunk.fulfilled.match(result)) {
-      router.replace('/(tabs)' as any);
+      router.replace("/(tabs)" as any);
     }
   };
 
   const handleEditMobile = () => {
     dispatch(resetOtpState());
-    setEnteredOtp('');
+    setEnteredOtp("");
     setTimeLeft(OTP_EXPIRY_SECONDS);
     setResendSuccessMessage(null);
   };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.keyboardView}>
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.keyboardView}
+    >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <ScrollView
           contentContainerStyle={[
@@ -156,18 +159,21 @@ export default function LoginScreen() {
           ]}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+        >
           {/* Brand Header */}
           <View
             style={[
               styles.brandContainer,
               otpRequested && styles.brandContainerCompact,
-            ]}>
+            ]}
+          >
             <View
               style={[
                 styles.logoBadge,
                 otpRequested && styles.logoBadgeCompact,
-              ]}>
+              ]}
+            >
               <Ionicons
                 name="briefcase"
                 size={otpRequested ? 22 : 32}
@@ -178,7 +184,8 @@ export default function LoginScreen() {
               style={[
                 styles.brandTitle,
                 otpRequested && styles.brandTitleCompact,
-              ]}>
+              ]}
+            >
               ONEMODO
             </Text>
             <View style={styles.badgeRow}>
@@ -188,8 +195,8 @@ export default function LoginScreen() {
             </View>
             <Text style={styles.welcomeSubtitle}>
               {otpRequested
-                ? 'Enter the 6-digit verification code'
-                : 'Sign in to access your dashboard'}
+                ? "Enter the 6-digit verification code"
+                : "Sign in to access your dashboard"}
             </Text>
           </View>
 
@@ -203,7 +210,8 @@ export default function LoginScreen() {
                   style={[
                     styles.phoneInputRow,
                     Boolean(mobileError) && styles.inputErrorBorder,
-                  ]}>
+                  ]}
+                >
                   <View style={styles.countryCodeBadge}>
                     <Text style={styles.flagEmoji}>🇮🇳</Text>
                     <Text style={styles.countryCode}>+91</Text>
@@ -216,14 +224,15 @@ export default function LoginScreen() {
                     maxLength={10}
                     value={mobileNumber}
                     onChangeText={(text) => {
-                      setMobileNumber(text.replace(/\D/g, ''));
+                      setMobileNumber(text.replace(/\D/g, ""));
                       if (mobileError) setMobileError(null);
                     }}
                   />
                   {mobileNumber.length > 0 ? (
                     <Pressable
-                      onPress={() => setMobileNumber('')}
-                      style={styles.clearIcon}>
+                      onPress={() => setMobileNumber("")}
+                      style={styles.clearIcon}
+                    >
                       <Ionicons
                         name="close-circle"
                         size={18}
@@ -262,12 +271,15 @@ export default function LoginScreen() {
                     pressed && styles.ctaButtonPressed,
                   ]}
                   onPress={handleSendOtp}
-                  disabled={isLoading}>
+                  disabled={isLoading}
+                >
                   {isLoading ? (
                     <ActivityIndicator color={AppColors.white} size="small" />
                   ) : (
                     <>
-                      <Text style={styles.ctaButtonText}>Get Verification Code</Text>
+                      <Text style={styles.ctaButtonText}>
+                        Get Verification Code
+                      </Text>
                       <Ionicons
                         name="arrow-forward"
                         size={18}
@@ -290,7 +302,8 @@ export default function LoginScreen() {
                   </View>
                   <Pressable
                     style={styles.editMobileBtn}
-                    onPress={handleEditMobile}>
+                    onPress={handleEditMobile}
+                  >
                     <Ionicons
                       name="pencil-outline"
                       size={14}
@@ -342,7 +355,7 @@ export default function LoginScreen() {
                     }}
                     error={
                       timeLeft === 0
-                        ? 'This OTP has expired. Please tap Resend OTP below.'
+                        ? "This OTP has expired. Please tap Resend OTP below."
                         : error
                     }
                     disabled={isVerifying || timeLeft === 0}
@@ -359,8 +372,10 @@ export default function LoginScreen() {
                         color={AppColors.mutedSlate}
                       />
                       <Text style={styles.timerText}>
-                        OTP expires in{' '}
-                        <Text style={styles.timerDigits}>{formatTimer(timeLeft)}</Text>
+                        OTP expires in{" "}
+                        <Text style={styles.timerDigits}>
+                          {formatTimer(timeLeft)}
+                        </Text>
                       </Text>
                     </View>
                   ) : (
@@ -382,7 +397,8 @@ export default function LoginScreen() {
                           pressed && styles.resendButtonPressed,
                         ]}
                         disabled={isLoading}
-                        onPress={handleResendOtp}>
+                        onPress={handleResendOtp}
+                      >
                         {isLoading ? (
                           <ActivityIndicator
                             size="small"
@@ -408,7 +424,10 @@ export default function LoginScreen() {
                 {/* Manual Verify CTA */}
                 {isVerifying ? (
                   <View style={styles.verifyingIndicator}>
-                    <ActivityIndicator size="small" color={AppColors.dominant} />
+                    <ActivityIndicator
+                      size="small"
+                      color={AppColors.dominant}
+                    />
                     <Text style={styles.verifyingText}>
                       Verifying with Onemodo Server...
                     </Text>
@@ -428,7 +447,8 @@ export default function LoginScreen() {
                       if (enteredOtp.length === 6 && timeLeft > 0) {
                         handleVerifyOtp(enteredOtp);
                       }
-                    }}>
+                    }}
+                  >
                     <Text style={styles.ctaButtonText}>Verify Code</Text>
                     <Ionicons
                       name="checkmark-circle"
@@ -443,10 +463,12 @@ export default function LoginScreen() {
 
           {/* Security & Support Footer */}
           <View style={styles.footer}>
-            <Ionicons name="lock-closed" size={14} color={AppColors.mutedSlate} />
-            <Text style={styles.footerText}>
-              Protected by Onemodo Security • API v3
-            </Text>
+            <Ionicons
+              name="lock-closed"
+              size={14}
+              color={AppColors.mutedSlate}
+            />
+            <Text style={styles.footerText}>Protected by Onemodo Security</Text>
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>
@@ -464,13 +486,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   containerCenter: {
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   containerTop: {
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   brandContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
   },
   brandContainerCompact: {
@@ -481,8 +503,8 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 18,
     backgroundColor: AppColors.dominant,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 14,
     elevation: 4,
     shadowColor: AppColors.dominant,
@@ -498,7 +520,7 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 26,
-    fontWeight: '900',
+    fontWeight: "900",
     color: AppColors.surface,
     letterSpacing: 2,
   },
@@ -519,14 +541,14 @@ const styles = StyleSheet.create({
   },
   executiveBadgeText: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: "800",
     color: AppColors.dominant,
     letterSpacing: 1,
   },
   welcomeSubtitle: {
     fontSize: 13,
     color: AppColors.mutedSlate,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 2,
   },
   card: {
@@ -546,19 +568,19 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   stageContainer: {
-    width: '100%',
+    width: "100%",
   },
   inputLabel: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
     color: AppColors.surface,
     marginBottom: 8,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   phoneInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1.5,
     borderColor: AppColors.border,
     borderRadius: 12,
@@ -567,8 +589,8 @@ const styles = StyleSheet.create({
     height: 52,
   },
   countryCodeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingRight: 10,
     borderRightWidth: 1,
@@ -580,13 +602,13 @@ const styles = StyleSheet.create({
   },
   countryCode: {
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: "800",
     color: AppColors.dominant,
   },
   phoneInput: {
     flex: 1,
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
     color: AppColors.textPrimary,
     letterSpacing: 1,
   },
@@ -597,8 +619,8 @@ const styles = StyleSheet.create({
     borderColor: AppColors.error,
   },
   errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     backgroundColor: AppColors.errorLight,
     padding: 8,
@@ -608,14 +630,14 @@ const styles = StyleSheet.create({
   errorBannerText: {
     fontSize: 12,
     color: AppColors.error,
-    fontWeight: '600',
+    fontWeight: "600",
     flex: 1,
   },
   ctaButton: {
     backgroundColor: AppColors.dominant,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     height: 52,
     borderRadius: 12,
@@ -636,13 +658,13 @@ const styles = StyleSheet.create({
   ctaButtonText: {
     color: AppColors.white,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.3,
   },
   mobilePreviewRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     backgroundColor: AppColors.cardSecondary,
     borderWidth: 1,
     borderColor: AppColors.border,
@@ -656,17 +678,17 @@ const styles = StyleSheet.create({
   mobilePreviewLabel: {
     fontSize: 11,
     color: AppColors.mutedSlate,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   mobilePreviewNumber: {
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: "800",
     color: AppColors.surface,
     marginTop: 2,
   },
   editMobileBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -677,12 +699,12 @@ const styles = StyleSheet.create({
   },
   editMobileText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     color: AppColors.dominant,
   },
   infoBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     backgroundColor: AppColors.primaryLight,
     borderWidth: 1,
@@ -694,12 +716,12 @@ const styles = StyleSheet.create({
   infoBannerText: {
     fontSize: 12,
     color: AppColors.dominant,
-    fontWeight: '600',
+    fontWeight: "600",
     flex: 1,
   },
   resendSuccessBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     backgroundColor: AppColors.successLight,
     borderWidth: 1,
@@ -711,7 +733,7 @@ const styles = StyleSheet.create({
   resendSuccessText: {
     fontSize: 12,
     color: AppColors.success,
-    fontWeight: '600',
+    fontWeight: "600",
     flex: 1,
   },
   otpWrapper: {
@@ -720,18 +742,18 @@ const styles = StyleSheet.create({
   otpPrompt: {
     fontSize: 12,
     color: AppColors.mutedSlate,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 4,
-    textAlign: 'center',
+    textAlign: "center",
   },
   timerSection: {
     marginTop: 10,
     marginBottom: 4,
-    alignItems: 'center',
+    alignItems: "center",
   },
   timerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     backgroundColor: AppColors.primaryLight,
     borderWidth: 1,
@@ -743,20 +765,20 @@ const styles = StyleSheet.create({
   timerText: {
     fontSize: 12,
     color: AppColors.mutedSlate,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   timerDigits: {
-    fontWeight: '800',
+    fontWeight: "800",
     color: AppColors.dominant,
   },
   expiredWrapper: {
-    alignItems: 'center',
-    width: '100%',
+    alignItems: "center",
+    width: "100%",
     gap: 8,
   },
   expiredBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     backgroundColor: AppColors.warningLight,
     borderWidth: 1,
@@ -767,13 +789,13 @@ const styles = StyleSheet.create({
   },
   expiredText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     color: AppColors.warning,
   },
   resendButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -784,7 +806,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   resendButtonPressed: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: "#DBEAFE",
     transform: [{ scale: 0.98 }],
   },
   resendButtonDisabled: {
@@ -792,13 +814,13 @@ const styles = StyleSheet.create({
   },
   resendButtonText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: "800",
     color: AppColors.dominant,
   },
   verifyingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     marginTop: 18,
     paddingVertical: 12,
@@ -806,12 +828,12 @@ const styles = StyleSheet.create({
   verifyingText: {
     fontSize: 13,
     color: AppColors.dominant,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     marginTop: 20,
     marginBottom: 8,
@@ -819,6 +841,6 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 11,
     color: AppColors.mutedSlate,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 });
